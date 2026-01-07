@@ -1,0 +1,1994 @@
+openapi: 3.0.3
+info:
+  title: Botrak Laravel API
+  description: |
+    Botrak Laravel API provides comprehensive asset management capabilities including:
+    - User authentication and organization management
+    - Asset registration, tracking, and auditing
+    - Plant and location management
+    - Assignment workflows and request handling
+    - Subscription plan and invoice management
+    - Reminders and notifications
+    
+    This API is designed for asset tracking applications with support for QR code scanning and mobile integration.
+  version: 1.0.0
+  contact:
+    name: Botrak API Support
+    email: support@botrak.com
+
+servers:
+  - url: https://botrak.virtueinfo.com/api
+    description: Ngrok Development Server
+  - url: '{baseUrl}/api'
+    description: Custom Server
+    variables:
+      baseUrl:
+        default: https://botrak.virtueinfo.com
+        description: Base URL for the API
+
+tags:
+  - name: Authentication
+    description: User authentication endpoints including login, logout, and password recovery
+  - name: Organization
+    description: Organization management and switching between organizations
+  - name: Plant
+    description: Plant and location management within organizations
+  - name: Asset Register
+    description: Asset register operations including listing, check-in, and check-out
+  - name: Audit
+    description: Audit management and reporting
+  - name: Assignments
+    description: Asset assignment and unassignment operations
+  - name: Reminders
+    description: Organization reminder management
+  - name: Organization Assets
+    description: Organization asset management including search, scan, and updates
+  - name: Plan
+    description: Subscription plan management
+  - name: Invoice
+    description: Invoice and payment management
+  - name: Requests
+    description: Request management including approval and rejection workflows
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  # Authentication Endpoints
+  /log_in:
+    post:
+      tags:
+        - Authentication
+      summary: User Login
+      description: Authenticate a user and receive an access token for subsequent API calls
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /logout:
+    post:
+      tags:
+        - Authentication
+      summary: User Logout
+      description: Invalidate the current user session and access token
+      operationId: logout
+      responses:
+        '200':
+          description: Successfully logged out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /password:
+    post:
+      tags:
+        - Authentication
+      summary: Forgot Password
+      description: Request a password reset email for the specified user account
+      operationId: forgotPassword
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ForgotPasswordRequest'
+      responses:
+        '200':
+          description: Password reset email sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Organization Endpoints
+  /users/my_organizations:
+    get:
+      tags:
+        - Organization
+      summary: Get My Organizations
+      description: Retrieve a list of all organizations the authenticated user belongs to
+      operationId: getMyOrganizations
+      responses:
+        '200':
+          description: List of user's organizations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /organization/organization_switch/{organizationId}:
+    get:
+      tags:
+        - Organization
+      summary: Switch Organization
+      description: Switch the current user's active organization context
+      operationId: switchOrganization
+      parameters:
+        - name: organizationId
+          in: path
+          required: true
+          description: The ID of the organization to switch to
+          schema:
+            type: integer
+            example: 25
+      responses:
+        '200':
+          description: Successfully switched organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationSwitchResponse'
+        '403':
+          description: User does not have access to this organization
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Organization not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Plant Endpoints
+  /{organizationId}/plants:
+    get:
+      tags:
+        - Plant
+      summary: Get Plant List
+      description: Retrieve a list of all plants within the specified organization
+      operationId: getPlants
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+      responses:
+        '200':
+          description: List of plants
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlantListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/plants/{plantId}/locations:
+    get:
+      tags:
+        - Plant
+      summary: Get Location List
+      description: Retrieve a list of all locations within a specific plant
+      operationId: getPlantLocations
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: plantId
+          in: path
+          required: true
+          description: The ID of the plant
+          schema:
+            type: integer
+            example: 210
+      responses:
+        '200':
+          description: List of locations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LocationListResponse'
+        '404':
+          description: Plant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Asset Register Endpoints
+  /{organizationId}/asset_registers:
+    get:
+      tags:
+        - Asset Register
+      summary: Get Asset Register Listing
+      description: Retrieve a list of all asset registers within the organization
+      operationId: getAssetRegisters
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+      responses:
+        '200':
+          description: List of asset registers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetRegisterListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/asset_registers/{assetRegisterId}/asset_list:
+    get:
+      tags:
+        - Asset Register
+      summary: Get Asset Register Organization Asset Listing
+      description: Retrieve a paginated list of organization assets within a specific asset register
+      operationId: getAssetRegisterAssets
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: assetRegisterId
+          in: path
+          required: true
+          description: The ID of the asset register
+          schema:
+            type: integer
+            example: 1241
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            default: 1
+            example: 25
+      responses:
+        '200':
+          description: Paginated list of assets
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetListPaginatedResponse'
+        '404':
+          description: Asset register not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/asset_registers/{assetRegisterId}/organization_assets/{assetId}:
+    get:
+      tags:
+        - Asset Register
+      summary: Get Asset Register Organization Asset Detail
+      description: Retrieve detailed information about a specific organization asset
+      operationId: getAssetDetail
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: assetRegisterId
+          in: path
+          required: true
+          description: The ID of the asset register
+          schema:
+            type: integer
+            example: 1205
+        - name: assetId
+          in: path
+          required: true
+          description: The ID of the organization asset
+          schema:
+            type: integer
+            example: 378517
+      responses:
+        '200':
+          description: Asset details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetDetailResponse'
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/asset_registers/{assetRegisterId}/organization_assets/{assetId}/checkin_asset:
+    post:
+      tags:
+        - Asset Register
+      summary: Asset Register Check-in
+      description: Check in an asset to the asset register
+      operationId: checkinAsset
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: assetRegisterId
+          in: path
+          required: true
+          description: The ID of the asset register
+          schema:
+            type: integer
+            example: 477
+        - name: assetId
+          in: path
+          required: true
+          description: The ID of the organization asset
+          schema:
+            type: integer
+            example: 270361
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckinRequest'
+      responses:
+        '200':
+          description: Asset checked in successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/asset_registers/{assetRegisterId}/organization_assets/{assetId}/checkout_asset:
+    post:
+      tags:
+        - Asset Register
+      summary: Asset Register Check-out
+      description: Check out an asset from the asset register
+      operationId: checkoutAsset
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: assetRegisterId
+          in: path
+          required: true
+          description: The ID of the asset register
+          schema:
+            type: integer
+            example: 477
+        - name: assetId
+          in: path
+          required: true
+          description: The ID of the organization asset
+          schema:
+            type: integer
+            example: 270361
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckoutRequest'
+      responses:
+        '200':
+          description: Asset checked out successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Audit Endpoints
+  /{organizationId}/audits:
+    get:
+      tags:
+        - Audit
+      summary: Get Audits List
+      description: Retrieve a list of audits for the organization with optional filtering
+      operationId: getAudits
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: audit
+          in: query
+          description: JSON object containing audit filter parameters
+          schema:
+            type: string
+            example: '{"organization_id": 25}'
+        - name: from_mobile
+          in: query
+          description: Indicates if the request is from a mobile device
+          schema:
+            type: boolean
+            example: true
+      responses:
+        '200':
+          description: List of audits
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/audits/{auditId}/audit_reports:
+    get:
+      tags:
+        - Audit
+      summary: Get Audit Reports Listing
+      description: Retrieve audit reports for a specific audit
+      operationId: getAuditReports
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: auditId
+          in: path
+          required: true
+          description: The ID of the audit
+          schema:
+            type: integer
+            example: 247
+      responses:
+        '200':
+          description: List of audit reports
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditReportListResponse'
+        '404':
+          description: Audit not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/audits/{auditId}/new_assets:
+    post:
+      tags:
+        - Audit
+      summary: Add New Assets to Audit
+      description: Add new assets discovered during an audit
+      operationId: addNewAuditAssets
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: auditId
+          in: path
+          required: true
+          description: The ID of the audit
+          schema:
+            type: integer
+            example: 247
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewAuditAssetsRequest'
+      responses:
+        '200':
+          description: Assets added successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Assignments Endpoints
+  /{organizationId}/assignments/assign_asset:
+    post:
+      tags:
+        - Assignments
+      summary: Assign Asset
+      description: Assign an asset to a user or location
+      operationId: assignAsset
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignAssetRequest'
+      responses:
+        '200':
+          description: Asset assigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/assignments/unassign_asset:
+    post:
+      tags:
+        - Assignments
+      summary: Unassign Asset
+      description: Remove an asset assignment from a user or location
+      operationId: unassignAsset
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnassignAssetRequest'
+      responses:
+        '200':
+          description: Asset unassigned successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/assignments/details:
+    get:
+      tags:
+        - Assignments
+      summary: Get Assignment Details
+      description: Retrieve assignment details for an asset by QR code
+      operationId: getAssignmentDetails
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: organization_asset
+          in: query
+          required: true
+          description: JSON object containing asset identifier (qr_code)
+          schema:
+            type: string
+            example: '{"qr_code":"052022ed842079708b6a"}'
+      responses:
+        '200':
+          description: Assignment details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentDetailResponse'
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Reminders Endpoints
+  /{organizationId}/organization_reminders:
+    get:
+      tags:
+        - Reminders
+      summary: Get Organization Reminders
+      description: Retrieve all reminders for the organization
+      operationId: getOrganizationReminders
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+      responses:
+        '200':
+          description: List of reminders
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReminderListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Organization Assets Endpoints
+  /{organizationId}/organization_assets:
+    post:
+      tags:
+        - Organization Assets
+      summary: Create/Update Organization Asset
+      description: Create a new organization asset or update existing asset data. Can also be used to add reminders to assets.
+      operationId: createOrUpdateOrganizationAsset
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrganizationAssetRequest'
+      responses:
+        '200':
+          description: Asset created/updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrganizationAssetResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/organization_assets/asset_categories_of_location:
+    get:
+      tags:
+        - Organization Assets
+      summary: Get Asset Categories of Location
+      description: Retrieve asset categories available at a specific location
+      operationId: getAssetCategoriesOfLocation
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: organization_asset
+          in: query
+          required: true
+          description: JSON object containing plant_id and location_id
+          schema:
+            type: string
+            example: '{"plant_id":120,"location_id":2086}'
+      responses:
+        '200':
+          description: List of asset categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetCategoryListResponse'
+        '404':
+          description: Location not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/organization_assets/asset_categories_of_plant:
+    get:
+      tags:
+        - Organization Assets
+      summary: Get Asset Categories of Plant
+      description: Retrieve asset categories available at a specific plant, optionally filtered by audit
+      operationId: getAssetCategoriesOfPlant
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: organization_asset
+          in: query
+          required: true
+          description: JSON object containing audit_id
+          schema:
+            type: string
+            example: '{"audit_id":242}'
+      responses:
+        '200':
+          description: List of asset categories
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetCategoryListResponse'
+        '404':
+          description: Plant not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/organization_assets/filter_by_asset_type:
+    get:
+      tags:
+        - Organization Assets
+      summary: Filter Assets by Type
+      description: Retrieve organization assets filtered by type, plant, or specific audit
+      operationId: filterAssetsByType
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: organization_asset
+          in: query
+          required: true
+          description: JSON object containing filter criteria (e.g., plant_id, asset_type, location_id)
+          schema:
+            type: string
+            example: '{"plant_id":164,"asset_type":"Rack","location_id":2906}'
+        - name: audit_id
+          in: query
+          description: Audit ID to filter by
+          schema:
+            type: integer
+            example: 214
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            default: 1
+            example: 1
+        - name: q
+          in: query
+          description: JSON object for additional queries
+          schema:
+            type: string
+        - name: from_mobile
+          in: query
+          description: Indicates if the request is from a mobile device
+          schema:
+            type: boolean
+            example: true
+      responses:
+        '200':
+          description: Filtered asset list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssetListPaginatedResponse'
+        '404':
+          description: Assets not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/organization_assets/scan_obj_succes_only:
+    get:
+      tags:
+        - Organization Assets
+      summary: Scan Object Success Only
+      description: Scan an asset by QR code and return only successful matches
+      operationId: scanObjectSuccessOnly
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: organization_asset
+          in: query
+          required: true
+          description: JSON object containing qr_code and organization_id
+          schema:
+            type: string
+            example: '{"qr_code":"1e0a00dcceb6778440e2","organization_id":25}'
+        - name: from_mobile
+          in: query
+          description: Indicates if the request is from a mobile device
+          schema:
+            type: boolean
+            example: true
+      responses:
+        '200':
+          description: Scanned asset details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ScanResultResponse'
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/organization_assets/search_obj:
+    get:
+      tags:
+        - Organization Assets
+      summary: Search Object
+      description: Search for an asset by QR code with location and audit context
+      operationId: searchObject
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: organization_asset
+          in: query
+          required: true
+          description: JSON object containing qr_code, location_id, and audit_id
+          schema:
+            type: string
+            example: '{"qr_code":"a54e66d728ce667008d4","location_id":2084,"audit_id":255}'
+        - name: from_mobile
+          in: query
+          description: Indicates if the request is from a mobile device
+          schema:
+            type: boolean
+            example: true
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResultResponse'
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/organization_assets/update_and_destroy:
+    post:
+      tags:
+        - Organization Assets
+      summary: Update and Destroy Assets
+      description: Bulk update or delete organization assets
+      operationId: updateAndDestroyAssets
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAndDestroyRequest'
+      responses:
+        '200':
+          description: Assets updated/destroyed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/organization_assets/update_by_audit:
+    put:
+      tags:
+        - Organization Assets
+      summary: Update Assets by Audit
+      description: Update organization assets based on audit findings
+      operationId: updateAssetsByAudit
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateByAuditRequest'
+      responses:
+        '200':
+          description: Assets updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/organization_assets/{assetId}/audit_logs:
+    put:
+      tags:
+        - Organization Assets
+      summary: Update Asset Audit Logs
+      description: Update or add audit logs for a specific organization asset
+      operationId: updateAssetAuditLogs
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: assetId
+          in: path
+          required: true
+          description: The ID of the organization asset
+          schema:
+            type: integer
+            example: 258186
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuditLogRequest'
+      responses:
+        '200':
+          description: Audit logs updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: Asset not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Plan Endpoints
+  /{organizationId}/company_priceplan/user_plan_details:
+    get:
+      tags:
+        - Plan
+      summary: Get User Plan Details
+      description: Retrieve the current subscription plan details for the user
+      operationId: getUserPlanDetails
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+      responses:
+        '200':
+          description: Plan details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlanDetailResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/company_priceplan/cancel_plan/:
+    post:
+      tags:
+        - Plan
+      summary: Cancel Plan
+      description: Cancel the current subscription plan
+      operationId: cancelPlan
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelPlanRequest'
+      responses:
+        '200':
+          description: Plan cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Cannot cancel plan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Invoice Endpoints
+  /{organizationId}/invoice/user_plan_invoice:
+    get:
+      tags:
+        - Invoice
+      summary: Get User Plan Invoice
+      description: Retrieve invoice details for the user's subscription plan
+      operationId: getUserPlanInvoice
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+      responses:
+        '200':
+          description: Invoice details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvoiceResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/invoice/invoice_paid/:
+    post:
+      tags:
+        - Invoice
+      summary: Mark Invoice as Paid
+      description: Mark an invoice as paid after successful payment
+      operationId: markInvoicePaid
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvoicePaidRequest'
+      responses:
+        '200':
+          description: Invoice marked as paid
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  # Request Endpoints
+  /{organizationId}/requests:
+    get:
+      tags:
+        - Requests
+      summary: Get All Requests
+      description: Retrieve all requests for the organization
+      operationId: getAllRequests
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+      responses:
+        '200':
+          description: List of requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/requests/pending:
+    get:
+      tags:
+        - Requests
+      summary: Get Pending Requests
+      description: Retrieve all pending requests awaiting approval
+      operationId: getPendingRequests
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+      responses:
+        '200':
+          description: List of pending requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestListResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/requests/pending_count:
+    get:
+      tags:
+        - Requests
+      summary: Get Pending Requests Count
+      description: Retrieve the count of pending requests
+      operationId: getPendingRequestsCount
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+      responses:
+        '200':
+          description: Pending requests count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PendingCountResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/requests/{requestId}/approve:
+    post:
+      tags:
+        - Requests
+      summary: Approve Request
+      description: Approve a pending request
+      operationId: approveRequest
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: requestId
+          in: path
+          required: true
+          description: The ID of the request to approve
+          schema:
+            type: integer
+            example: 180
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveRejectRequest'
+      responses:
+        '200':
+          description: Request approved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Cannot approve request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Request not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /{organizationId}/requests/{requestId}/reject:
+    post:
+      tags:
+        - Requests
+      summary: Reject Request
+      description: Reject a pending request
+      operationId: rejectRequest
+      parameters:
+        - $ref: '#/components/parameters/OrganizationIdPath'
+        - name: requestId
+          in: path
+          required: true
+          description: The ID of the request to reject
+          schema:
+            type: integer
+            example: 179
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApproveRejectRequest'
+      responses:
+        '200':
+          description: Request rejected successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Cannot reject request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Request not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: token
+      description: Custom token authentication. Obtain token via the /log_in endpoint.
+
+  parameters:
+    OrganizationIdPath:
+      name: organizationId
+      in: path
+      required: true
+      description: The ID of the organization
+      schema:
+        type: integer
+        example: 25
+
+  schemas:
+    # Request Schemas
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+          example: user@example.com
+        password:
+          type: string
+          format: password
+          description: User's password
+          example: password123
+
+    ForgotPasswordRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          description: Email address to send password reset link
+          example: user@example.com
+
+    CheckinRequest:
+      type: object
+      properties:
+        notes:
+          type: string
+          description: Optional notes for the check-in
+        condition:
+          type: string
+          description: Condition of the asset at check-in
+          enum: [good, fair, poor, damaged]
+
+    CheckoutRequest:
+      type: object
+      properties:
+        assigned_to:
+          type: integer
+          description: User ID to assign the asset to
+        notes:
+          type: string
+          description: Optional notes for the check-out
+        expected_return_date:
+          type: string
+          format: date
+          description: Expected return date
+
+    NewAuditAssetsRequest:
+      type: object
+      required:
+        - assets
+      properties:
+        assets:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              qr_code:
+                type: string
+              category_id:
+                type: integer
+              location_id:
+                type: integer
+
+    AssignAssetRequest:
+      type: object
+      required:
+        - asset_id
+        - assigned_to
+      properties:
+        asset_id:
+          type: integer
+          description: ID of the asset to assign
+        assigned_to:
+          type: integer
+          description: User ID to assign the asset to
+        notes:
+          type: string
+          description: Optional assignment notes
+
+    UnassignAssetRequest:
+      type: object
+      required:
+        - asset_id
+      properties:
+        asset_id:
+          type: integer
+          description: ID of the asset to unassign
+        notes:
+          type: string
+          description: Optional unassignment notes
+
+    OrganizationAssetRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Asset name
+        qr_code:
+          type: string
+          description: QR code identifier
+        category_id:
+          type: integer
+          description: Asset category ID
+        location_id:
+          type: integer
+          description: Location ID
+        plant_id:
+          type: integer
+          description: Plant ID
+        reminder:
+          type: object
+          properties:
+            reminder_date:
+              type: string
+              format: date
+            reminder_type:
+              type: string
+            message:
+              type: string
+
+    UpdateAndDestroyRequest:
+      type: object
+      properties:
+        update:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              data:
+                type: object
+        destroy:
+          type: array
+          items:
+            type: integer
+          description: Array of asset IDs to delete
+
+    UpdateByAuditRequest:
+      type: object
+      required:
+        - audit_id
+        - assets
+      properties:
+        audit_id:
+          type: integer
+          description: Audit ID
+        assets:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              status:
+                type: string
+              notes:
+                type: string
+
+    AuditLogRequest:
+      type: object
+      properties:
+        action:
+          type: string
+          description: Action performed
+        notes:
+          type: string
+          description: Additional notes
+        timestamp:
+          type: string
+          format: date-time
+
+    CancelPlanRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          description: Reason for cancellation
+        feedback:
+          type: string
+          description: Optional feedback
+
+    InvoicePaidRequest:
+      type: object
+      required:
+        - invoice_id
+        - payment_id
+      properties:
+        invoice_id:
+          type: integer
+          description: Invoice ID
+        payment_id:
+          type: string
+          description: Payment transaction ID
+        payment_method:
+          type: string
+          description: Payment method used
+
+    ApproveRejectRequest:
+      type: object
+      properties:
+        notes:
+          type: string
+          description: Optional notes for approval/rejection
+
+    # Response Schemas
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        message:
+          type: string
+          example: Operation completed successfully
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: An error occurred
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+
+    LoginResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        token:
+          type: string
+          description: JWT access token
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        user:
+          $ref: '#/components/schemas/User'
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        name:
+          type: string
+          example: John Doe
+        email:
+          type: string
+          format: email
+          example: john@example.com
+        created_at:
+          type: string
+          format: date-time
+
+    OrganizationListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Organization'
+
+    Organization:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 25
+        name:
+          type: string
+          example: Botrak Inc
+        logo:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+
+    OrganizationSwitchResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        organization:
+          $ref: '#/components/schemas/Organization'
+
+    PlantListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Plant'
+
+    Plant:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 210
+        name:
+          type: string
+          example: Main Plant
+        address:
+          type: string
+        organization_id:
+          type: integer
+
+    LocationListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Location'
+
+    Location:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 2086
+        name:
+          type: string
+          example: Warehouse A
+        plant_id:
+          type: integer
+        floor:
+          type: string
+        building:
+          type: string
+
+    AssetRegisterListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetRegister'
+
+    AssetRegister:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1241
+        name:
+          type: string
+          example: IT Equipment Register
+        description:
+          type: string
+        organization_id:
+          type: integer
+        asset_count:
+          type: integer
+
+    AssetListPaginatedResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationAsset'
+        meta:
+          $ref: '#/components/schemas/PaginationMeta'
+
+    PaginationMeta:
+      type: object
+      properties:
+        current_page:
+          type: integer
+          example: 1
+        last_page:
+          type: integer
+          example: 10
+        per_page:
+          type: integer
+          example: 15
+        total:
+          type: integer
+          example: 150
+
+    OrganizationAsset:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 378517
+        name:
+          type: string
+          example: Dell Laptop
+        qr_code:
+          type: string
+          example: a54e66d728ce667008d4
+        category_id:
+          type: integer
+        location_id:
+          type: integer
+        plant_id:
+          type: integer
+        status:
+          type: string
+          enum: [available, assigned, maintenance, retired]
+        created_at:
+          type: string
+          format: date-time
+
+    AssetDetailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/OrganizationAssetDetail'
+
+    OrganizationAssetDetail:
+      allOf:
+        - $ref: '#/components/schemas/OrganizationAsset'
+        - type: object
+          properties:
+            assigned_to:
+              $ref: '#/components/schemas/User'
+            location:
+              $ref: '#/components/schemas/Location'
+            plant:
+              $ref: '#/components/schemas/Plant'
+            audit_logs:
+              type: array
+              items:
+                $ref: '#/components/schemas/AuditLog'
+
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+        action:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+        timestamp:
+          type: string
+          format: date-time
+        notes:
+          type: string
+
+    AuditListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Audit'
+
+    Audit:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 247
+        name:
+          type: string
+          example: Q4 2024 Audit
+        organization_id:
+          type: integer
+        status:
+          type: string
+          enum: [pending, in_progress, completed]
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        created_at:
+          type: string
+          format: date-time
+
+    AuditReportListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditReport'
+
+    AuditReport:
+      type: object
+      properties:
+        id:
+          type: integer
+        audit_id:
+          type: integer
+        report_type:
+          type: string
+        generated_at:
+          type: string
+          format: date-time
+        download_url:
+          type: string
+          format: uri
+
+    AssignmentDetailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Assignment'
+
+    Assignment:
+      type: object
+      properties:
+        id:
+          type: integer
+        asset:
+          $ref: '#/components/schemas/OrganizationAsset'
+        assigned_to:
+          $ref: '#/components/schemas/User'
+        assigned_by:
+          $ref: '#/components/schemas/User'
+        assigned_at:
+          type: string
+          format: date-time
+        expected_return_date:
+          type: string
+          format: date
+        status:
+          type: string
+          enum: [active, returned, overdue]
+
+    ReminderListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reminder'
+
+    Reminder:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        message:
+          type: string
+        reminder_date:
+          type: string
+          format: date
+        reminder_type:
+          type: string
+          enum: [maintenance, inspection, renewal, custom]
+        asset_id:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+
+    AssetCategoryListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssetCategory'
+
+    AssetCategory:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          example: IT Equipment
+        description:
+          type: string
+        parent_id:
+          type: integer
+          nullable: true
+
+    ScanResultResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/OrganizationAssetDetail'
+
+    SearchResultResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrganizationAsset'
+        audit_status:
+          type: string
+          description: Status of the asset in the current audit context
+
+    OrganizationAssetResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/OrganizationAsset'
+        message:
+          type: string
+
+    PlanDetailResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Plan'
+
+    Plan:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+          example: Professional
+        price:
+          type: number
+          format: float
+          example: 99.99
+        billing_cycle:
+          type: string
+          enum: [monthly, yearly]
+        features:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [active, cancelled, expired]
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+
+    InvoiceResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          $ref: '#/components/schemas/Invoice'
+
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: integer
+        invoice_number:
+          type: string
+          example: INV-2024-001
+        amount:
+          type: number
+          format: float
+        currency:
+          type: string
+          example: USD
+        status:
+          type: string
+          enum: [pending, paid, overdue, cancelled]
+        due_date:
+          type: string
+          format: date
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        download_url:
+          type: string
+          format: uri
+
+    RequestListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Request'
+
+    Request:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 180
+        type:
+          type: string
+          enum: [asset_request, checkout_request, return_request, maintenance_request]
+        status:
+          type: string
+          enum: [pending, approved, rejected]
+        requested_by:
+          $ref: '#/components/schemas/User'
+        asset:
+          $ref: '#/components/schemas/OrganizationAsset'
+        notes:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PendingCountResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        count:
+          type: integer
+          example: 5
