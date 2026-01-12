@@ -68,12 +68,10 @@ const ApprovalsScreen = ({ route, navigation }) => {
   // API Actions
   const handleCancelApprove = () => {
     setApproveModalVisible(false);
-    closeActiveRow();
   };
 
   const handleCancelReject = () => {
     setRejectModalVisible(false);
-    closeActiveRow();
   };
 
   const handleApproveConfirm = async () => {

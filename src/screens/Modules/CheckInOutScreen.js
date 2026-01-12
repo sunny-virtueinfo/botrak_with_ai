@@ -48,7 +48,7 @@ const CheckInOutScreen = ({ navigation, route }) => {
   };
 
   return (
-    <ScreenWrapper title="Check In/Out" showMenu={true} scrollable={true}>
+    <ScreenWrapper title="Asset Check In/Out" showMenu={true} scrollable={true}>
       <View style={styles.content}>
         <Text style={styles.subHeader}>
           Select an option to identify the asset

@@ -31,7 +31,7 @@ export const AuthProvider = ({ children }) => {
             client.defaults.headers.token = userData.token;
 
             // Validate Plan Status
-            validatePlan(userData.organization_id);
+            await validatePlan(userData.organization_id, userData);
           }
         }
       } catch (e) {
@@ -43,46 +43,116 @@ export const AuthProvider = ({ children }) => {
     loadUser();
   }, []);
 
-  const validatePlan = async currentOrgId => {
+  /*
+   * Validates if the user has an active plan.
+   * If the current org's plan is expired, it tries to find another org with an active plan.
+   * If NO active plan is found across any organization, it logs the user out.
+   */
+  const validatePlan = async (currentOrgId, userData) => {
     try {
       // We need to fetch organizations to check current status
       // We use client directly to avoid hook restrictions
       const response = await client.get(API_ENDPOINTS.MY_ORGANIZATIONS);
 
-      if (response.data && response.data.my_organizations) {
-        const currentOrg = response.data.my_organizations.find(
-          o => o.organization_id == currentOrgId,
-        );
+      if (
+        response.data &&
+        response.data.my_organizations &&
+        response.data.my_organizations.length > 0
+      ) {
+        const orgs = response.data.my_organizations;
+
+        // 1. Check current organization first
+        const currentOrg = orgs.find(o => o.organization_id == currentOrgId);
+        let isCurrentPlanActive = false;
 
         if (currentOrg) {
-          // Check if plan is active
-          // Default to true if undefined to avoid accidental lockout
-          let isMsgPlanActive = true;
-
           if (currentOrg.hasOwnProperty('is_plan_active')) {
-            isMsgPlanActive =
+            isCurrentPlanActive =
               currentOrg.is_plan_active === true ||
               currentOrg.is_plan_active === 1;
-          }
-
-          if (!isMsgPlanActive) {
-            console.log('Current plan expired. Auto-logging out.');
-            logout();
+          } else {
+            // If the key is missing, assume active to avoid lockout errors?
+            // Or assume inactive? The prompt says "Check if not have any current plan".
+            // Let's assume safe default is true unless server explicitly says false,
+            // but usually a flag existence means we should trust it.
+            // For now, let's stick to the previous logic default which was 'true' but safer implementation:
+            isCurrentPlanActive = true;
           }
         }
+
+        if (isCurrentPlanActive) {
+          // All good, stay here.
+
+          // Backfill name if missing (Data Migration)
+          if (!userData.organization_name && currentOrg.organization_name) {
+            const updatedWithNames = {
+              ...userData,
+              organization_name: currentOrg.organization_name,
+            };
+            setUser(updatedWithNames);
+            AsyncStorage.setItem(
+              'user_session',
+              JSON.stringify(updatedWithNames),
+            ).catch(e => console.error(e));
+          }
+          return;
+        }
+
+        // 2. Current plan is inactive (or current org not found). Look for ANY other active plan.
+        const activeOrg = orgs.find(
+          o => o.is_plan_active === true || o.is_plan_active === 1,
+        );
+
+        if (activeOrg) {
+          const updatedUser = {
+            ...userData,
+            organization_id: activeOrg.organization_id,
+            role: activeOrg.role,
+          };
+
+          // Save to State
+          setUser(updatedUser);
+
+          // Save to Storage
+          try {
+            await AsyncStorage.setItem(
+              'user_session',
+              JSON.stringify(updatedUser),
+            );
+
+            // Also update 'active_org' which AppNavigator uses
+            const orgToSave = {
+              organization_id: activeOrg.organization_id,
+              name: activeOrg.organization_name,
+              role: activeOrg.role,
+            };
+            await AsyncStorage.setItem('active_org', JSON.stringify(orgToSave));
+          } catch (e) {
+            console.error('Auto-switch Org Save Error', e);
+          }
+        } else {
+          // 3. No active plans found anywhere.
+          console.log('No active plans found. Auto-logging out.');
+          // Ensure we clear everything
+          await logout();
+        }
+      } else {
+        // No organizations found at all?
+        // This effectively means no plan.
+        console.log('No organizations found. Auto-logging out.');
+        await logout();
       }
     } catch (e) {
       console.log('Plan Validation Failed', e);
+      if (e.response && e.response.status === 401) {
+        console.log('Token expired or invalid. Auto-logging out.');
+        await logout();
+      }
     }
   };
 
   const login = async (userData, token) => {
     // 1. Save to State
-    // Ensure role_names is parsed/valid
-    /* 
-       Note: API usually sends role_names array. 
-       If we need to modify userData structure before saving, do it here.
-    */
     const userToSave = { ...userData, token };
     setUser(userToSave);
 
@@ -117,13 +187,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const updateUserOrg = async (newOrgId, newRole) => {
+  const updateUserOrg = async (newOrgId, newRole, newOrgName) => {
     if (!user) return;
 
     const updatedUser = {
       ...user,
       organization_id: newOrgId,
       role: newRole || user.role,
+      organization_name: newOrgName || user.organization_name,
       // Note: role_names might need update too if backend provides it
     };
 

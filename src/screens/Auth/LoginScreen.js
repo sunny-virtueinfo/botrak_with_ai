@@ -93,7 +93,8 @@ const LoginScreen = ({ navigation }) => {
         // 4. Set Token in Context
         await login(user, token);
       } else {
-        showToast(response.data.message || 'Invalid credentials', 'error');
+        console.log('response.data', response.data);
+        showToast(response.data.error || 'Invalid credentials', 'error');
       }
     } catch (error) {
       console.error('Login Error', error);

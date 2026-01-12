@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import OrganizationSwitchModal from '../common/OrganizationSwitchModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useApiService } from '../../services/ApiService';
+import { useToast } from '../../context/ToastContext';
 
 const SideMenu = ({ navigation, state }) => {
   const { user, logout, updateUserOrg } = useAuth();
@@ -26,7 +27,28 @@ const SideMenu = ({ navigation, state }) => {
   const [assignmentModalVisible, setAssignmentModalVisible] = useState(false);
   const [logoutModalVisible, setLogoutModalVisible] = useState(false);
   const [approvalCount, setApprovalCount] = useState(0);
-  const api = useApiService();
+  const [activeOrgName, setActiveOrgName] = useState('');
+  const { showToast } = useToast();
+
+  useEffect(() => {
+    const loadOrgName = async () => {
+      try {
+        if (user?.organization_name) {
+          setActiveOrgName(user.organization_name);
+        } else {
+          // Fallback for legacy session or initial load
+          const storedOrg = await AsyncStorage.getItem('active_org');
+          if (storedOrg) {
+            const parsed = JSON.parse(storedOrg);
+            setActiveOrgName(parsed.organization_name);
+          }
+        }
+      } catch (e) {
+        console.error('Failed to load active org name', e);
+      }
+    };
+    loadOrgName();
+  }, [user, isOrgModalVisible]);
 
   const activeRoles =
     user?.role_names && user.role_names.length > 0
@@ -34,7 +56,7 @@ const SideMenu = ({ navigation, state }) => {
       : [user?.role || ROLES.EMPLOYEE];
 
   const menuItems = getMenuItems(activeRoles);
-  const activeRoute = state ? state.routes[state.index].name : '';
+  const activeRoute = state?.routes?.[state?.index]?.name || '';
 
   const isActive = route => activeRoute === route;
 
@@ -59,7 +81,8 @@ const SideMenu = ({ navigation, state }) => {
 
   const handleManualSelect = () => {
     setAssignmentModalVisible(false);
-    navigation.navigate('AssetAssignment');
+    const orgId = user?.organization_id;
+    navigation.navigate('AssetRegisterSelection', { organizationId: orgId });
   };
 
   const handleQRSelect = () => {
@@ -81,14 +104,20 @@ const SideMenu = ({ navigation, state }) => {
 
     const newOrg = {
       organization_id: org.organization_id,
-      name: org.name || org.organization_name,
+      organization_name: org.organization_name || org.name, // Prioritize organization_name
       role: extractedRole,
     };
+    // Update local state immediately
+    setActiveOrgName(newOrg.organization_name);
 
     try {
       await AsyncStorage.setItem('active_org', JSON.stringify(newOrg));
       if (updateUserOrg) {
-        await updateUserOrg(newOrg.organization_id, newOrg.role);
+        await updateUserOrg(
+          newOrg.organization_id,
+          newOrg.role,
+          newOrg.organization_name,
+        );
       }
     } catch (e) {
       console.error('Failed to switch org', e);
@@ -101,12 +130,14 @@ const SideMenu = ({ navigation, state }) => {
           name: 'Dashboard',
           params: {
             organizationId: newOrg.organization_id,
-            orgName: newOrg.name,
+            orgName: newOrg.organization_name,
+            organization_name: newOrg.organization_name, // Pass both for safety if other screens use different keys
             role: newOrg.role || 'employee',
           },
         },
       ],
     });
+    showToast('Organization switched successfully', 'success');
   };
 
   return (
@@ -129,7 +160,15 @@ const SideMenu = ({ navigation, state }) => {
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={styles.modalContent}>
-                <Text style={styles.modalTitle}>Assignment Mode</Text>
+                <View style={styles.modalHeader}>
+                  <View style={{ width: 24 }} />
+                  <Text style={styles.modalTitle}>Assignment Mode</Text>
+                  <TouchableOpacity
+                    onPress={() => setAssignmentModalVisible(false)}
+                  >
+                    <Feather name="x" size={24} color={COLORS.text} />
+                  </TouchableOpacity>
+                </View>
                 <Text style={styles.modalSubtitle}>
                   Choose how to assign assets
                 </Text>
@@ -240,14 +279,25 @@ const SideMenu = ({ navigation, state }) => {
             <Text style={styles.userName} numberOfLines={1}>
               {user?.name || 'User Name'}
             </Text>
+
+            {activeOrgName ? (
+              <Text style={styles.orgName} numberOfLines={1}>
+                {/* <Feather name="briefcase" size={12} color={COLORS.textLight} />  */}
+                {activeOrgName}
+              </Text>
+            ) : null}
+
             <Text style={styles.userEmail} numberOfLines={1}>
               {user?.email || 'user@botrak.com'}
             </Text>
-            <Text style={styles.roleText}>
-              {activeRoles
-                .map(r => r.replace(/_/g, ' ').toUpperCase())
-                .join(', ')}
-            </Text>
+
+            <View style={styles.roleBadge}>
+              <Text style={styles.roleText}>
+                {(activeRoles || [])
+                  .map(r => (r ? r.replace(/_/g, ' ').toUpperCase() : ''))
+                  .join(', ')}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -356,13 +406,20 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 12,
     color: COLORS.textLight,
-    marginBottom: 6,
+    marginBottom: 8,
+  },
+  orgName: {
+    fontSize: 13,
+    color: COLORS.primary,
+    fontWeight: '600',
+    marginBottom: 2,
+    opacity: 0.9,
   },
   roleBadge: {
     backgroundColor: 'rgba(99, 102, 241, 0.1)',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
     alignSelf: 'flex-start',
   },
   roleText: {
@@ -468,6 +525,15 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '800',
     color: COLORS.text,
+    marginBottom: 0,
+    textAlign: 'center',
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    alignItems: 'center',
     marginBottom: 8,
   },
   modalSubtitle: { fontSize: 14, color: COLORS.textLight, marginBottom: 24 },

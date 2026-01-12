@@ -105,69 +105,73 @@ const AuditListScreen = ({ navigation, route }) => {
     }
   };
 
-  const renderItem = ({ item }) => (
-    <GlassCard style={styles.card}>
-      <View style={styles.headerRow}>
-        <Text style={styles.auditName}>{item.name}</Text>
-        <View
-          style={[
-            styles.badge,
-            { backgroundColor: getStatusColor(item.status) + '20' },
-          ]}
-        >
-          <Text
-            style={[styles.badgeText, { color: getStatusColor(item.status) }]}
+  const renderItem = ({ item }) => {
+    console.log('item', item);
+    return (
+      <GlassCard style={styles.card}>
+        <View style={styles.headerRow}>
+          <Text style={styles.auditName}>{item.name}</Text>
+          <View
+            style={[
+              styles.badge,
+              { backgroundColor: getStatusColor(item.status) + '20' },
+            ]}
           >
-            {item.status?.replace('_', ' ').toUpperCase()}
-          </Text>
+            <Text
+              style={[styles.badgeText, { color: getStatusColor(item.status) }]}
+            >
+              {item.status?.replace('_', ' ').toUpperCase()}
+            </Text>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.row}>
-        <Text style={styles.label}>Plan:</Text>
-        <Text style={styles.value}>{item.plan_name || 'N/A'}</Text>
-      </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Plan:</Text>
+          <Text style={styles.value}>{item.plan_name || 'N/A'}</Text>
+        </View>
 
-      <View style={styles.row}>
-        <Text style={styles.label}>Start:</Text>
-        <Text style={styles.value}>{item.audit_start_date}</Text>
-      </View>
-      <View style={styles.row}>
-        <Text style={styles.label}>End:</Text>
-        <Text style={styles.value}>{item.audit_end_date}</Text>
-      </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>Start:</Text>
+          <Text style={styles.value}>{item.audit_start_date}</Text>
+        </View>
+        <View style={styles.row}>
+          <Text style={styles.label}>End:</Text>
+          <Text style={styles.value}>{item.audit_end_date}</Text>
+        </View>
 
-      {item.members && item.members.length > 0 && (
-        <View style={styles.membersRow}>
-          <Text style={[styles.label, { width: '100%', marginBottom: 5 }]}>
-            Members:
-          </Text>
-          <View style={styles.memberChips}>
-            {(Array.isArray(item.members) ? item.members : [item.members]).map(
-              (member, idx) => (
+        {item.members && item.members.length > 0 && (
+          <View style={styles.membersRow}>
+            <Text style={[styles.label, { width: '100%', marginBottom: 5 }]}>
+              Members:
+            </Text>
+            <View style={styles.memberChips}>
+              {(Array.isArray(item.members)
+                ? item.members
+                : [item.members]
+              ).map((member, idx) => (
                 <View key={idx} style={styles.memberChip}>
                   <Text style={styles.memberText}>{member}</Text>
                 </View>
-              ),
-            )}
+              ))}
+            </View>
           </View>
-        </View>
-      )}
+        )}
 
-      <GradientButton
-        title="Start Audit"
-        onPress={() =>
-          navigation.navigate('AuditLocations', {
-            auditId: item.id,
-            organizationId,
-            plantId: item.plant_id,
-          })
-        }
-        style={styles.startBtn}
-        colors={COLORS.gradients.primary}
-      />
-    </GlassCard>
-  );
+        <GradientButton
+          title="Start Audit"
+          onPress={() =>
+            navigation.navigate('AuditLocations', {
+              auditId: item.id,
+              organizationId,
+              plantId: item.plant_id,
+            })
+          }
+          style={styles.startBtn}
+          colors={COLORS.gradients.primary}
+        />
+      </GlassCard>
+    );
+  };
 
   return (
     <ScreenWrapper title="Audits" showMenu={true} scrollable={false}>

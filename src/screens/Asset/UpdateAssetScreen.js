@@ -8,7 +8,11 @@ import {
   Alert,
   Modal,
   FlatList,
+  Platform,
+  ActionSheetIOS,
+  Image,
 } from 'react-native';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { COLORS, SPACING, SHADOWS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
@@ -35,6 +39,7 @@ const CONSTANT_CONDITION = [
 
 const UpdateAssetScreen = ({ route, navigation }) => {
   const { asset: initialAsset, organizationId } = route.params;
+  console.log('initialAsset', initialAsset);
   const api = useApiService();
   const { showToast } = useToast();
 
@@ -64,8 +69,52 @@ const UpdateAssetScreen = ({ route, navigation }) => {
   const [selectedAssetRegister, setSelectedAssetRegister] = useState('');
 
   // Images (Mocked/Partial)
+  // Images (Mocked/Partial)
   const [existingImages, setExistingImages] = useState([]);
   const [deletedImageIds, setDeletedImageIds] = useState([]);
+  const [newImages, setNewImages] = useState([]);
+
+  const handleSelectImage = () => {
+    const options = {
+      mediaType: 'photo',
+      maxWidth: 1024,
+      maxHeight: 1024,
+      quality: 0.8,
+    };
+
+    const onImagePicked = response => {
+      if (response.didCancel) return;
+      if (response.errorCode) {
+        Alert.alert('Error', response.errorMessage);
+        return;
+      }
+      if (response.assets && response.assets.length > 0) {
+        const asset = response.assets[0];
+        const newImage = {
+          uri: asset.uri,
+          type: asset.type,
+          name: asset.fileName || 'upload.jpg',
+        };
+        setNewImages(prev => [...prev, newImage]);
+      }
+    };
+
+    Alert.alert('Select Photo', 'Choose an option', [
+      {
+        text: 'Camera',
+        onPress: () => launchCamera(options, onImagePicked),
+      },
+      {
+        text: 'Gallery',
+        onPress: () => launchImageLibrary(options, onImagePicked),
+      },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const handleRemoveNewImage = index => {
+    setNewImages(prev => prev.filter((_, i) => i !== index));
+  };
 
   // Errors
   const [errors, setErrors] = useState({});
@@ -233,18 +282,27 @@ const UpdateAssetScreen = ({ route, navigation }) => {
         formdata.append('organization_asset[deleted_pictures][]', id);
       });
 
-      // New Images (Placeholder for logic)
-      // images.forEach(img => { ... })
+      // New Images
+      newImages.forEach(img => {
+        formdata.append('organization_asset[pictures][]', {
+          uri: img.uri,
+          name: img.name,
+          type: img.type,
+        });
+      });
 
       const params = {
         id: initialAsset.id,
       };
-
+      console.log('formdata', formdata);
       const response = await api.updateAsset(organizationId, formdata, params);
-
+      console.log('response', response.data);
       if (response.data && response.data.success) {
         showToast('Asset updated successfully', 'success');
-        navigation.navigate('CheckInOut', { refresh: true });
+        navigation.navigate('Dashboard', {
+          screen: 'CheckInOut',
+          params: { refresh: true },
+        });
       } else {
         showToast(response.data?.error || 'Failed to update', 'error');
       }
@@ -467,12 +525,7 @@ const UpdateAssetScreen = ({ route, navigation }) => {
       <View style={styles.section}>
         <TouchableOpacity
           style={styles.addImageBtn}
-          onPress={() =>
-            Alert.alert(
-              'Info',
-              'Image upload via library not available. Use Scanner to attach existing or wait for update.',
-            )
-          }
+          onPress={handleSelectImage}
         >
           <Text style={styles.addImageText}>Add Image</Text>
         </TouchableOpacity>
@@ -480,11 +533,39 @@ const UpdateAssetScreen = ({ route, navigation }) => {
 
       {existingImages.map(img => (
         <View key={img.image_id} style={styles.imageRow}>
-          <Text style={{ flex: 1, color: COLORS.text }}>
-            {img.name || 'Image'}
-          </Text>
+          <Image
+            source={{ uri: img.picture_url || img.uri }} // Fallback to uri if needed
+            style={styles.thumbnail}
+            resizeMode="cover"
+          />
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={{ color: COLORS.text, fontSize: 12 }}>
+              {img.name || 'Existing Image'}
+            </Text>
+          </View>
           <TouchableOpacity
             onPress={() => handleRemoveExistingImage(img.image_id)}
+            style={styles.removeBtn}
+          >
+            <Text style={styles.removeText}>Remove</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
+
+      {newImages.map((img, index) => (
+        <View key={`new-${index}`} style={styles.imageRow}>
+          <Image
+            source={{ uri: img.uri }}
+            style={styles.thumbnail}
+            resizeMode="cover"
+          />
+          <View style={{ flex: 1, marginLeft: 10 }}>
+            <Text style={{ color: COLORS.text, fontSize: 12 }}>
+              New Image {index + 1}
+            </Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => handleRemoveNewImage(index)}
             style={styles.removeBtn}
           >
             <Text style={styles.removeText}>Remove</Text>
@@ -557,6 +638,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
+  },
+  thumbnail: {
+    width: 60,
+    height: 60,
+    borderRadius: 6,
+    backgroundColor: '#f0f0f0',
   },
   removeBtn: {
     borderWidth: 1,

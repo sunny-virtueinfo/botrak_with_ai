@@ -70,7 +70,10 @@ const AuditLocationsScreen = ({ route, navigation }) => {
   };
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity onPress={() => handleLocationSelect(item)}>
+    <TouchableOpacity
+      onPress={() => handleLocationSelect(item)}
+      activeOpacity={0.7}
+    >
       <GlassCard style={styles.card}>
         <View style={styles.row}>
           <View style={styles.iconContainer}>

@@ -120,7 +120,7 @@ const AssetListScreen = ({ route, navigation }) => {
           params.audit_id = route.params.auditId;
         }
         const response = await api.getManualAudit(organizationId, params);
-
+        console.log('Manual Audit Response 1', response.data);
         if (response.data && response.data.success) {
           newData = response.data.data || response.data.organization_asset;
           if (!Array.isArray(newData)) newData = newData ? [newData] : [];
@@ -141,13 +141,17 @@ const AssetListScreen = ({ route, navigation }) => {
         }
 
         const response = await api.getManualAudit(organizationId, params);
+        console.log('Manual Audit Response 2', response.data);
         if (response.data && response.data.success) {
           newData = response.data.data || response.data.organization_asset;
           if (!Array.isArray(newData)) newData = newData ? [newData] : [];
         }
       } else {
         if (plantId) {
+          console.log('organizationId', organizationId);
+          console.log('params', params);
           const response = await api.getManualAudit(organizationId, params);
+          console.log('Manual Audit Response 3', response.data);
           if (response.data && response.data.success) {
             newData = response.data.data || response.data.organization_asset;
             if (!Array.isArray(newData)) newData = newData ? [newData] : [];
@@ -237,7 +241,7 @@ const AssetListScreen = ({ route, navigation }) => {
   };
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity activeOpacity={0.9} onPress={() => handleItemPress(item)}>
+    <TouchableOpacity activeOpacity={0.7} onPress={() => handleItemPress(item)}>
       <View style={styles.card}>
         <View style={styles.statusIndicator(item.status)} />
         <View style={styles.cardContent}>

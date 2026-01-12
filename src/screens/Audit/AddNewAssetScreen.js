@@ -12,10 +12,12 @@ import { useApiService } from '../../services/ApiService';
 import GradientButton from '../../components/premium/GradientButton';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
+import { useToast } from '../../context/ToastContext';
 
 const AddNewAssetScreen = ({ route, navigation }) => {
   const { auditId, locationId, organizationId, plantId } = route.params;
   const api = useApiService();
+  const { showToast } = useToast();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -31,12 +33,18 @@ const AddNewAssetScreen = ({ route, navigation }) => {
   const loadCategories = async () => {
     try {
       setLoading(true);
-      const response = await api.getCategoriesByLocation(
-        organizationId,
-        plantId,
-        locationId,
-      );
+
+      // Use getCategoriesByPlant as per user curl instructions
+      const params = {
+        organization_asset: JSON.stringify({
+          audit_id: auditId,
+        }),
+        from_mobile: true,
+      };
+
+      const response = await api.getCategoriesByPlant(organizationId, params);
       const assetTypes = response.data.asset_type || response.data.data;
+
       if (assetTypes && Array.isArray(assetTypes)) {
         const formattedCategories = assetTypes.map(item => {
           if (typeof item === 'string') {
@@ -68,27 +76,35 @@ const AddNewAssetScreen = ({ route, navigation }) => {
 
     try {
       setSubmitting(true);
-      const payload = {
-        name,
-        description,
-        category_id: assetType.id,
-        location_id: locationId,
-        audit_id: auditId,
-        status: 'active', // Default status
+      const body = {
+        new_asset: {
+          name: name,
+          asset_type: assetType.id,
+          description: description,
+          location_id: locationId,
+        },
+        from_mobile: true,
       };
 
-      const response = await api.addNewAuditAssets(organizationId, payload);
+      console.log('DEBUG: AddNewAsset payload:', body);
+
+      const response = await api.addNewAuditAssets(
+        organizationId,
+        auditId,
+        body,
+      );
+
+      console.log('DEBUG: AddNewAsset response:', response);
 
       if (response.data.success) {
-        Alert.alert('Success', 'Asset added successfully', [
-          { text: 'OK', onPress: () => navigation.goBack() },
-        ]);
+        showToast('Asset added successfully', 'success');
+        navigation.goBack();
       } else {
-        Alert.alert('Error', response.data.message || 'Failed to add asset');
+        showToast(response.data.error || 'Failed to add asset', 'error');
       }
     } catch (e) {
       console.error(e);
-      Alert.alert('Error', 'Failed to submit asset');
+      showToast('Failed to submit asset', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -102,8 +118,6 @@ const AddNewAssetScreen = ({ route, navigation }) => {
       contentContainerStyle={styles.scrollContent}
     >
       <View style={styles.formCard}>
-        <Text style={styles.title}>Add New Asset</Text>
-
         <Text style={styles.label}>
           Asset Name <Text style={{ color: COLORS.error }}>*</Text>
         </Text>
@@ -177,13 +191,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: SPACING.l,
     ...SHADOWS.medium,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: SPACING.l,
-    fontFamily: FONTS.bold,
   },
   label: {
     fontSize: 14,

@@ -11,7 +11,7 @@ const ActionCard = ({
   iconColor = 'black',
   onPress,
 }) => (
-  <TouchableOpacity onPress={onPress} activeOpacity={0.9}>
+  <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
     <GlassCard style={styles.optionCard}>
       <View style={[styles.iconContainer, { backgroundColor: color }]}>
         <Image

@@ -11,7 +11,7 @@ const MODULES = {
   ASSETS: { id: 'assets', label: 'Assets', icon: 'box', route: 'AssetList' },
   CHECK_IN_OUT: {
     id: 'check_in_out',
-    label: 'Check In/Out',
+    label: 'Asset Check In/Out',
     icon: 'repeat',
     route: 'CheckInOut',
   },
@@ -35,7 +35,7 @@ const MODULES = {
   },
   APPROVALS: {
     id: 'approvals',
-    label: 'Approvals',
+    label: 'Asset Approvals',
     icon: 'check-circle',
     route: 'Approvals',
   },

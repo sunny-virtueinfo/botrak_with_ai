@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  TextInput,
 } from 'react-native';
 import { useApiService } from '../../services/ApiService';
 import { COLORS, SPACING, SHADOWS, FONTS } from '../../theme';
@@ -17,6 +18,7 @@ import Feather from 'react-native-vector-icons/Feather';
 const PlantSelectionScreen = ({ navigation, route }) => {
   const [plants, setPlants] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchText, setSearchText] = useState('');
   const api = useApiService();
 
   const {
@@ -57,6 +59,10 @@ const PlantSelectionScreen = ({ navigation, route }) => {
     });
   };
 
+  const filteredPlants = plants.filter(plant =>
+    plant.name?.toLowerCase().includes(searchText.toLowerCase()),
+  );
+
   const renderItem = ({ item }) => (
     <TouchableOpacity
       activeOpacity={0.8}
@@ -78,13 +84,28 @@ const PlantSelectionScreen = ({ navigation, route }) => {
 
   return (
     <ScreenWrapper title="Select Plant" showBack={true}>
+      <View style={styles.searchContainer}>
+        <Feather
+          name="search"
+          size={20}
+          color={COLORS.textLight}
+          style={styles.searchIcon}
+        />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search Plant..."
+          placeholderTextColor={COLORS.textLight}
+          value={searchText}
+          onChangeText={setSearchText}
+        />
+      </View>
       {loading ? (
         <View style={styles.loaderContainer}>
           <Loader visible={true} size="large" overlay={false} />
         </View>
       ) : (
         <FlatList
-          data={plants}
+          data={filteredPlants}
           keyExtractor={item => item.id.toString()}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
@@ -104,6 +125,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    marginHorizontal: SPACING.m,
+    marginTop: SPACING.m,
+    paddingHorizontal: SPACING.m,
+    borderRadius: 12,
+    height: 50,
+    ...SHADOWS.soft,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: COLORS.text,
+    height: '100%',
   },
   list: {
     padding: SPACING.m,

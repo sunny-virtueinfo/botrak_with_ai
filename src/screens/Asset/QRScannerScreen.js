@@ -12,6 +12,7 @@ import {
   FlatList,
   useWindowDimensions,
 } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import {
   useCameraDevices,
   Camera,
@@ -29,18 +30,21 @@ const QRScannerScreen = ({ navigation, route }) => {
   const { showToast } = useToast();
   const api = useApiService();
   const { mode, organizationId, auditId, plantId } = route.params || {};
+  console.log('QRScanner audit params:', {
+    mode,
+    organizationId,
+    auditId,
+    plantId,
+    params: route.params,
+  });
   const { width, height } = useWindowDimensions();
+  const isFocused = useIsFocused();
 
   // Vision Camera v3/v4 hook
   const device = useCameraDevice('back');
 
-  // Optimization: Select a format that is efficient (e.g., 720p or 1080p, not 4k)
-  // and supports 15-30 FPS to reduce heat/battery usage.
-  // Aggressive: Prefer 1280x720 or 640x480 to minimize CPU usage.
-  const format = useCameraFormat(device, [
-    { videoResolution: { width: 1280, height: 720 } },
-    { fps: 15 }, // Target 15 FPS for maximum battery saving
-  ]);
+  // Removed manual format selection to let the library choose the best compatible format
+  // for Code Scanning to avoid "session/invalid-output-configuration" errors.
 
   const [hasPermission, setHasPermission] = useState(false);
 
@@ -80,6 +84,7 @@ const QRScannerScreen = ({ navigation, route }) => {
   const fetchLocations = async () => {
     try {
       const res = await api.getLocations(organizationId, plantId);
+      console.log('getLocations res:', JSON.stringify(res.data, null, 2));
       if (res.data && (res.data.locations || res.data.data)) {
         setLocations(res.data.locations || res.data.data);
       }
@@ -103,7 +108,33 @@ const QRScannerScreen = ({ navigation, route }) => {
 
     try {
       setIsProcessing(true);
-      const response = await api.scanAssetSuccessOnly(organizationId, code);
+      let response;
+
+      if (mode === 'audit') {
+        // User requested specific API structure for audit
+        const params = {
+          organization_asset: JSON.stringify({
+            qr_code: code,
+            location_id: selectedLocation,
+            audit_id: auditId,
+          }),
+          from_mobile: true,
+        };
+
+        console.log('Audit Scan Params:', params);
+        response = await api.searchAssets(organizationId, params);
+        console.log(
+          'Audit Scan Response:',
+          JSON.stringify(response.data, null, 2),
+        );
+      } else {
+        response = await api.scanAssetSuccessOnly(organizationId, code);
+        console.log(
+          'scanAssetSuccessOnly res:',
+          JSON.stringify(response.data, null, 2),
+        );
+      }
+
       const asset = response.data.organization_asset || response.data.data;
 
       if (response.data.success && asset) {
@@ -121,7 +152,9 @@ const QRScannerScreen = ({ navigation, route }) => {
           setTimeout(() => setIsProcessing(false), 2000); // Cooldown for other modes
         }
       } else {
-        showToast(`Asset with QR ${code} not found`, 'error');
+        const errorMsg =
+          response.data.error || `Asset with QR ${code} not found`;
+        showToast(errorMsg, 'error');
         setIsProcessing(false);
       }
     } catch (e) {
@@ -195,7 +228,14 @@ const QRScannerScreen = ({ navigation, route }) => {
         },
       };
 
-      await api.submitAuditLog(organizationId, auditId, scannedAsset.id, body);
+      console.log('submitAuditLog body:', body);
+      const res = await api.submitAuditLog(
+        organizationId,
+        auditId,
+        scannedAsset.id,
+        body,
+      );
+      console.log('submitAuditLog res:', res.data);
 
       setModalVisible(false);
       showToast('Asset Verified Successfully!', 'success');
@@ -236,7 +276,7 @@ const QRScannerScreen = ({ navigation, route }) => {
 
   // Optimization: Pause camera when processing or modal open to save resources
   const isCameraActive =
-    !modalVisible && !locationModalVisible && !isProcessing;
+    !modalVisible && !locationModalVisible && !isProcessing && isFocused;
 
   return (
     <View style={styles.container}>
@@ -245,8 +285,10 @@ const QRScannerScreen = ({ navigation, route }) => {
         device={device}
         isActive={isCameraActive}
         codeScanner={codeScanner}
-        format={format} // Use optimized format
-        fps={15} // Limit to 15 FPS for maximum efficiency
+        photo={true}
+        video={false}
+        audio={false}
+        enableZoomGesture={false}
       />
 
       {/* Frame Overlay */}

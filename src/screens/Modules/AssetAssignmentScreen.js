@@ -17,18 +17,15 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
 
-const AssetAssignmentScreen = ({ route, navigation }) => {
-  const { organizationId } = route.params || {};
-  const layout = useWindowDimensions();
+const AssetAssignmentScreen = ({ navigation, route }) => {
   const api = useApiService();
   const { showToast } = useToast();
+  const { organizationId, registerId: paramRegisterId } = route.params || {};
+
+  const [registerId, setRegisterId] = useState(paramRegisterId || null);
 
   const [loading, setLoading] = useState(false);
   const [index, setIndex] = useState(0);
-  const [routes] = useState([
-    { key: 'assigned', title: 'Assigned' },
-    { key: 'unassigned', title: 'Unassigned' },
-  ]);
 
   // Data
   const [assignedAssets, setAssignedAssets] = useState([]);
@@ -41,10 +38,7 @@ const AssetAssignmentScreen = ({ route, navigation }) => {
   const [unassignReason, setUnassignReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const [registerId, setRegisterId] = useState(null);
-
   useEffect(() => {
-    // If we come back from QR code or Employee List, we might need to refresh
     const unsubscribe = navigation.addListener('focus', () => {
       const scanned = route.params?.scannedAsset;
       if (scanned) {
@@ -310,7 +304,14 @@ const AssetAssignmentScreen = ({ route, navigation }) => {
   );
 
   return (
-    <ScreenWrapper title="Assignment" showMenu={true} scrollable={false}>
+    <ScreenWrapper
+      title="Assignment"
+      showBack={true}
+      scrollable={false}
+      onBackPress={() =>
+        navigation.navigate('AssetRegisterSelection', { organizationId })
+      }
+    >
       {/* Main Content */}
       <View style={{ flex: 1 }}>
         {/* Custom Tabs */}

@@ -24,23 +24,20 @@ const ScreenWrapper = ({
   headerTextColor,
   headerIconColor,
   style,
+  onBackPress,
 }) => {
   return (
     <LinearGradient
       colors={COLORS.gradients?.background || ['#F8FAFC', '#EFF6FF', '#E0F2FE']}
-      locations={[0, 0.4, 1]}
       style={[styles.container, style]}
     >
       <StatusBar
-        barStyle="dark-content"
+        barStyle="light-content"
         backgroundColor="transparent"
         translucent
       />
 
-      <SafeAreaView
-        style={styles.safeArea}
-        edges={['top', 'left', 'right', 'bottom']}
-      >
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right', 'bottom']}>
         {(title || showBack || showMenu) && (
           <CustomHeader
             title={title}
@@ -51,6 +48,7 @@ const ScreenWrapper = ({
             gradientColors={headerGradientColors}
             textColor={headerTextColor}
             iconColor={headerIconColor}
+            onBackPress={onBackPress}
           />
         )}
 

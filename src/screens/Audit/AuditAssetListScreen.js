@@ -28,6 +28,10 @@ const AuditAssetListScreen = ({ route, navigation }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [showFabOptions, setShowFabOptions] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [searchValue, setSearchValue] = useState('');
+  const [isLoadMore, setIsLoadMore] = useState(false);
 
   const api = useApiService();
 
@@ -36,8 +40,9 @@ const AuditAssetListScreen = ({ route, navigation }) => {
   const [usage, setUsage] = useState('medium');
   const [remark, setRemark] = useState('');
 
+  // Initial Load
   useEffect(() => {
-    loadAssets();
+    loadAssets(1, '', true);
   }, [categoryId]);
 
   // Handle Scanned Asset from QR
@@ -50,53 +55,123 @@ const AuditAssetListScreen = ({ route, navigation }) => {
     }
   }, [route.params?.scannedAsset]);
 
-  const loadAssets = async () => {
+  const loadAssets = async (pageNum = 1, search = '', reset = false) => {
     try {
-      setLoading(true);
-      let response;
+      if (pageNum === 1) setLoading(true);
+      else setIsLoadMore(true);
+
+      // Determine filter parameters
+      // User requested exact match with cURL: organization_asset={"plant_id":"..."}
+      const filterParams = {
+        plant_id: plantId,
+        // location_id: locationId, // REMOVED to match user cURL for "All Assets"
+      };
+      // If specific category is selected, add it to filter
       if (categoryId) {
-        // Specific Category -> Use Filter API
-        const params = {
-          organization_asset: JSON.stringify({
-            plant_id: plantId,
-            asset_type: categoryId, // Asset Name string
-            location_id: locationId,
-          }),
-          audit_id: auditId,
-          page: 1,
-          from_mobile: true,
-        };
-        response = await api.filterAssetsByType(organizationId, params);
-      } else {
-        // All Assets -> Use Search API
-        const params = {
-          organization_asset: JSON.stringify({
-            location_id: locationId,
-            audit_id: auditId,
-          }),
-          from_mobile: true,
-        };
-        response = await api.searchAssets(organizationId, params);
+        filterParams.asset_type = categoryId;
       }
 
-      if (response.data.success) {
-        // Check for 'organization_asset' (Filter API) or 'data' (Search API)
-        setAssets(response.data.organization_asset || response.data.data || []);
+      // Construct API params
+      const params = {
+        organization_asset: JSON.stringify(filterParams),
+        audit_id: auditId,
+        page: pageNum,
+        from_mobile: true,
+      };
+
+      // Add Search Param
+      if (search) {
+        params.q = JSON.stringify({ search_cont: search });
+      }
+
+      // Use filterAssetsByType for BOTH cases
+      const response = await api.filterAssetsByType(organizationId, params);
+      console.log('DEBUG: filterAssetsByType response:', response);
+      // Flexible response handling
+      let newAssets = [];
+      const responseData = response.data;
+
+      if (Array.isArray(responseData)) {
+        newAssets = responseData;
+      } else if (responseData && typeof responseData === 'object') {
+        if (Array.isArray(responseData.organization_asset)) {
+          newAssets = responseData.organization_asset;
+        } else if (Array.isArray(responseData.data)) {
+          newAssets = responseData.data;
+        } else if (responseData.id) {
+          // It's a single asset object effectively
+          newAssets = [responseData];
+        } else if (responseData.success === true && responseData.data) {
+          // Handle case where success is true but data might be object?
+          newAssets = Array.isArray(responseData.data)
+            ? responseData.data
+            : [responseData.data];
+        }
+      }
+
+      console.log('Processed newAssets length:', newAssets.length);
+
+      if (newAssets.length > 0 || responseData.success) {
+        // Accept if we found assets OR success is true (even if empty list)
+        if (reset) {
+          setAssets(newAssets);
+        } else {
+          setAssets(prev => {
+            const combined = [...prev, ...newAssets];
+            const unique = Array.from(
+              new Map(combined.map(item => [item.id, item])).values(),
+            );
+            return unique;
+          });
+        }
+
+        // Pagination Check
+        if (newAssets.length === 0) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
       } else {
-        setAssets([]);
+        if (reset) setAssets([]);
+        setHasMore(false);
       }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
+      setIsLoadMore(false);
     }
+  };
+
+  const handleSearch = text => {
+    setSearchValue(text);
+    setPage(1);
+    setHasMore(true);
+    setTimeout(() => {
+      loadAssets(1, text, true);
+    }, 500);
+  };
+
+  const handleRefresh = () => {
+    setPage(1);
+    setHasMore(true);
+    // Keep search value on refresh
+    loadAssets(1, searchValue, true);
+  };
+
+  const handleLoadMore = () => {
+    if (!hasMore || isLoadMore || loading) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    loadAssets(nextPage, searchValue, false);
   };
 
   const handleAssetSelect = asset => {
     setSelectedAsset(asset);
-    setCondition('working');
-    setUsage('medium');
-    setRemark('');
+    // Pre-fill existing values if available, otherwise default
+    setCondition(asset.condition || 'working');
+    setUsage(asset.usage || 'medium');
+    setRemark(asset.remarks || ''); // Note: API usually returns 'remarks', state is 'remark'
     setModalVisible(true);
   };
 
@@ -108,17 +183,27 @@ const AuditAssetListScreen = ({ route, navigation }) => {
           id: selectedAsset.id,
           status: selectedAsset.status || 'available',
           notes: detailedNotes,
+          condition: condition,
+          usage: usage,
+          remark: remark,
         },
       ];
 
-      await api.submitAuditEntry(organizationId, auditId, assetsData);
-
-      setModalVisible(false);
-      alert('Asset Verified!');
-      loadAssets();
+      const response = await api.submitAuditEntry(
+        organizationId,
+        auditId,
+        assetsData,
+      );
+      if (response.data.success) {
+        setModalVisible(false);
+        showToast(response.data.message, 'success');
+        loadAssets();
+      } else {
+        showToast(response.data.error, 'error');
+      }
     } catch (e) {
       console.error(e);
-      alert('Failed to save audit entry');
+      showToast('Failed to submit audit entry', 'error');
     }
   };
 
@@ -174,6 +259,31 @@ const AuditAssetListScreen = ({ route, navigation }) => {
 
   return (
     <ScreenWrapper title={title} showBack={true}>
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchWrapper}>
+          <Feather
+            name="search"
+            size={20}
+            color={COLORS.textLight}
+            style={{ marginRight: 10 }}
+          />
+          <TextInput
+            placeholder="Search assets..."
+            placeholderTextColor={COLORS.textLight}
+            value={searchValue}
+            onChangeText={handleSearch}
+            style={styles.searchInput}
+            returnKeyType="search"
+          />
+          {searchValue.length > 0 && (
+            <TouchableOpacity onPress={() => handleSearch('')}>
+              <Feather name="x" size={18} color={COLORS.textLight} />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       {loading ? (
         <View
           style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
@@ -186,6 +296,17 @@ const AuditAssetListScreen = ({ route, navigation }) => {
           renderItem={renderItem}
           keyExtractor={item => item.id.toString()}
           contentContainerStyle={styles.list}
+          refreshing={loading}
+          onRefresh={handleRefresh}
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={
+            isLoadMore ? (
+              <View style={{ padding: 20 }}>
+                <Loader visible={true} size="small" overlay={false} />
+              </View>
+            ) : null
+          }
           ListEmptyComponent={
             <Text style={styles.empty}>No assets found here.</Text>
           }
@@ -436,6 +557,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...SHADOWS.soft,
+  },
+  searchContainer: {
+    paddingHorizontal: SPACING.m,
+    paddingTop: SPACING.s,
+    marginBottom: SPACING.s,
+  },
+  searchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.surface,
+    paddingHorizontal: SPACING.m,
+    height: 48,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    ...SHADOWS.soft,
+  },
+  searchInput: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: 16,
+    height: '100%',
   },
 });
 

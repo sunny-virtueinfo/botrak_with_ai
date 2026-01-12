@@ -80,6 +80,15 @@ export const useApiService = () => {
     });
   };
 
+  const getCategoriesByPlant = async (orgId = activeOrgId, params) => {
+    // Wrapper for ASSET_CATEGORIES_PLANT endpoint
+    // Params should typically include 'organization_asset' stringified
+    return client.get(API_ENDPOINTS.ASSET_CATEGORIES_PLANT(orgId), {
+      params,
+      headers: { token: user?.token },
+    });
+  };
+
   const filterAssetsByType = async (orgId = activeOrgId, params) => {
     return client.get(API_ENDPOINTS.FILTER_BY_ASSET_TYPE(orgId), {
       params,
@@ -154,14 +163,10 @@ export const useApiService = () => {
     });
   };
 
-  const addNewAuditAssets = async (orgId = activeOrgId, auditId, newAssets) => {
-    return client.post(
-      API_ENDPOINTS.NEW_AUDIT_ASSETS(orgId, auditId),
-      {
-        assets: newAssets,
-      },
-      { headers: { token: user?.token } },
-    );
+  const addNewAuditAssets = async (orgId = activeOrgId, auditId, data) => {
+    return client.post(API_ENDPOINTS.NEW_AUDIT_ASSETS(orgId, auditId), data, {
+      headers: { token: user?.token },
+    });
   };
 
   // Asset Register Operations
@@ -318,8 +323,17 @@ export const useApiService = () => {
     const requestParams = {
       from_mobile: true,
       page: params.page || 1,
-      ...params,
     };
+
+    // Similar to getManualAudit, backend might expect JSON stringified q
+    if (params.q !== undefined && params.q !== null && params.q !== '') {
+      // If q is just a string (search text), wrap it in a Ransack matcher
+      // Using 'search_cont' as requested by user
+      const qObject =
+        typeof params.q === 'string' ? { search_cont: params.q } : params.q;
+
+      requestParams.q = JSON.stringify(qObject);
+    }
 
     return client.get(API_ENDPOINTS.GET_USERS(orgId), {
       params: requestParams,
@@ -405,6 +419,7 @@ export const useApiService = () => {
     getLocations,
     searchAssets,
     getCategoriesByLocation,
+    getCategoriesByPlant,
     getAudits,
     submitAuditEntry,
     submitAuditLog,

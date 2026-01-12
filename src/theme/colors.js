@@ -13,6 +13,7 @@ export const COLORS = {
     success: ['#10B981', '#059669'],
     surface: ['#FFFFFF', '#F9FAFB'],
     background: ['#F3F4F6', '#E5E7EB'], // Gray 100 to Gray 200
+    info: ['#3B82F6', '#2563EB'], // Blue 500 to Blue 600
   },
   status: {
     active: '#10B981', // Emerald 500

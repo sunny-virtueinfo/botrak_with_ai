@@ -321,7 +321,11 @@ const InvoicesScreen = ({ route }) => {
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ListFooterComponent={
-            loading && <Loader visible={true} size="small" overlay={false} />
+            loading && (
+              <View style={styles.loaderContainer}>
+                <Loader visible={true} size="small" />
+              </View>
+            )
           }
         />
       )}
@@ -333,6 +337,10 @@ const styles = StyleSheet.create({
   listContent: {
     padding: SPACING.m,
     paddingBottom: 100,
+  },
+  loaderContainer: {
+    paddingVertical: SPACING.m,
+    alignItems: 'center',
   },
   card: {
     marginBottom: SPACING.m,

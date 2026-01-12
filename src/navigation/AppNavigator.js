@@ -154,6 +154,14 @@ const DrawerNavigator = ({ route }) => {
         options={{ title: 'Current Plan' }}
         {...commonOptions}
       />
+      <Drawer.Screen
+        name="AssetRegisterSelection"
+        component={
+          require('../screens/Modules/AssetRegisterSelectionScreen').default
+        }
+        options={{ title: 'Select Register' }}
+        {...commonOptions}
+      />
     </Drawer.Navigator>
   );
 };

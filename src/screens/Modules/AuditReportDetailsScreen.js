@@ -14,6 +14,48 @@ import GlassCard from '../../components/premium/GlassCard';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
 
+import GenericDropdown from '../../components/common/GenericDropdown';
+
+const FILTERS = {
+  case1: [
+    { label: 'All', value: '' },
+    { label: 'Found', value: 'Found' },
+    { label: 'Location mismatch', value: 'Location mismatch' },
+  ],
+  case2: [
+    { label: 'All', value: '' },
+    { label: 'Working', value: 'Working' },
+    { label: 'Not Working', value: 'Not Working' },
+    { label: 'Partially Working', value: 'Partially working' },
+    { label: 'Scrap', value: 'Scrap' },
+  ],
+  case3: [
+    { label: 'All', value: '' },
+    { label: 'Medium', value: 'medium' },
+    { label: 'Idle', value: 'Idle' },
+    { label: 'Low', value: 'low' },
+    { label: 'High', value: 'high' },
+  ],
+  case4: [
+    { label: 'All', value: '' },
+    { label: 'Laptop Charger', value: 'laptop charger' },
+    { label: 'Laptop', value: 'laptop' },
+    { label: 'Keyboard', value: 'keyboard' },
+    { label: 'Mouse', value: 'mouse' },
+    { label: 'Desktop', value: 'desktop' },
+    { label: 'Monitor', value: 'monitor' },
+    { label: 'Cable', value: 'cable' },
+    { label: 'Mobile', value: 'mobile' },
+  ],
+  case5: [
+    { label: 'All', value: '' },
+    { label: 'Medium', value: 'medium' },
+    { label: 'Idle', value: 'Idle' },
+    { label: 'Low', value: 'low' },
+    { label: 'High', value: 'high' },
+  ],
+};
+
 const TABS = [
   { id: 'case1', label: 'Found' },
   { id: 'case5', label: 'Not Found' },
@@ -61,17 +103,26 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
           from_mobile: true,
         };
 
-        if (filterValue) {
-          const keyMap = {
-            case1: 'found_status',
-            case2: 'condition',
-            case3: 'usage',
-            case4: 'asset_type',
-            case5: 'not_found_status',
-          };
-          if (keyMap[activeTab]) {
-            body[keyMap[activeTab]] = filterValue;
+        const keyMap = {
+          case1: 'found_status',
+          case2: 'condition',
+          case3: 'usage',
+          case4: 'asset_type',
+          case5: 'not_found_status',
+        };
+
+        const key = keyMap[activeTab];
+        if (key) {
+          let valToSend = filterValue;
+          // If filterValue is empty (e.g. "All" selected), set specific defaults
+          if (!valToSend) {
+            if (activeTab === 'case1') {
+              valToSend = ''; // found_status expects empty string for All
+            } else {
+              valToSend = 'all'; // others expect "all" string
+            }
           }
+          body[key] = valToSend;
         }
 
         const apiMap = {
@@ -114,10 +165,13 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
     setPage(1);
     setHasMore(true);
     setData([]);
+    setFilterValue(''); // Reset filter on tab change
     fetchPage(1);
   }, [activeTab]);
 
   useEffect(() => {
+    // Debounce is less critical for dropdown but safe to keep or remove.
+    // Since it's a dropdown, immediate fetch is usually fine, but keeping existing logic structure.
     const timer = setTimeout(() => {
       setPage(1);
       setHasMore(true);
@@ -125,6 +179,12 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
     }, 500);
     return () => clearTimeout(timer);
   }, [filterValue]);
+
+  // Helper to capitalize first letter of each word
+  const capitalize = str => {
+    if (!str) return '';
+    return String(str).replace(/\b\w/g, l => l.toUpperCase());
+  };
 
   const renderItem = ({ item }) => (
     <GlassCard style={styles.card}>
@@ -140,45 +200,101 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
             <Text style={styles.subText}>User: {item.user_name}</Text>
           )}
         </View>
-        <View style={{ alignItems: 'flex-end' }}>
-          <View
-            style={[
-              styles.badge,
-              {
-                backgroundColor:
-                  item.found === 'Found'
-                    ? COLORS.success + '20'
-                    : COLORS.error + '20',
-              },
-            ]}
-          >
-            <Text
-              style={[
-                styles.badgeText,
-                {
-                  color: item.found === 'Found' ? COLORS.success : COLORS.error,
-                },
-              ]}
-            >
-              {item.found || (item.count !== undefined ? item.count : 'N/A')}
-            </Text>
-          </View>
+        <View style={{ alignItems: 'flex-end', maxWidth: '40%' }}>
+          {(() => {
+            let valueToShow = item.found;
+            let displayLabel = item.found;
+
+            switch (activeTab) {
+              case 'case2': // Condition
+                valueToShow = item.condition;
+                displayLabel = item.condition;
+                break;
+              case 'case3': // Usage
+              case 'case5': // Not Found -> Usage
+                valueToShow = item.usage;
+                displayLabel = item.usage;
+                break;
+              case 'case4': // New -> Asset Type
+                valueToShow = item.asset_type;
+                displayLabel = item.asset_type;
+                break;
+              case 'case1':
+              default:
+                valueToShow = item.found;
+                displayLabel =
+                  item.found || (item.count !== undefined ? item.count : 'N/A');
+                break;
+            }
+
+            // Fallback if the specific value is missing (e.g. no condition set)
+            // But usually we render what we have.
+            if (!valueToShow && activeTab !== 'case1') return null;
+
+            return (
+              <View
+                style={[
+                  styles.badge,
+                  // Default colors (Green/Red for Found/Not Found) for Case 1, else generic Surface/Primary
+                  activeTab === 'case1'
+                    ? {
+                        backgroundColor:
+                          item.found === 'Found'
+                            ? COLORS.success + '20'
+                            : COLORS.error + '20',
+                      }
+                    : {
+                        backgroundColor: COLORS.surface,
+                        borderWidth: 1,
+                        borderColor: COLORS.border,
+                      },
+                  // Apply Highlight - REMOVED as per request
+                  // getHighlightStyle(valueToShow)
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.badgeText,
+                    activeTab === 'case1'
+                      ? {
+                          color:
+                            item.found === 'Found'
+                              ? COLORS.success
+                              : COLORS.error,
+                        }
+                      : {
+                          color: COLORS.text,
+                        },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {capitalize(displayLabel)}
+                </Text>
+              </View>
+            );
+          })()}
         </View>
       </View>
 
       <View style={styles.divider} />
 
       <View style={styles.detailsRow}>
+        {item.asset_type && (
+          <View style={[styles.detailItem]}>
+            <Feather name="box" size={12} color={COLORS.textLight} />
+            <Text style={styles.detailText}>{capitalize(item.asset_type)}</Text>
+          </View>
+        )}
         {item.condition && (
-          <View style={styles.detailItem}>
+          <View style={[styles.detailItem]}>
             <Feather name="activity" size={12} color={COLORS.textLight} />
-            <Text style={styles.detailText}>{item.condition}</Text>
+            <Text style={styles.detailText}>{capitalize(item.condition)}</Text>
           </View>
         )}
         {item.usage && (
-          <View style={styles.detailItem}>
+          <View style={[styles.detailItem]}>
             <Feather name="clock" size={12} color={COLORS.textLight} />
-            <Text style={styles.detailText}>{item.usage}</Text>
+            <Text style={styles.detailText}>{capitalize(item.usage)}</Text>
           </View>
         )}
       </View>
@@ -223,18 +339,13 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
         />
       </View>
 
-      <View style={styles.searchContainer}>
-        <Feather
-          name="search"
-          size={20}
-          color={COLORS.textLight}
-          style={{ marginRight: 10 }}
-        />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Filter..."
+      <View style={styles.filterContainer}>
+        <GenericDropdown
+          label="Filter By"
+          data={FILTERS[activeTab] || []}
           value={filterValue}
-          onChangeText={setFilterValue}
+          onValueChange={setFilterValue}
+          placeholder="Select Filter"
         />
       </View>
 
@@ -288,17 +399,11 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: 'white',
   },
-  searchContainer: {
-    marginHorizontal: SPACING.m,
+  filterContainer: {
+    paddingHorizontal: SPACING.m,
     marginBottom: SPACING.m,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    paddingHorizontal: 15,
-    height: 45,
+    zIndex: 100, // Ensure dropdown overlays list
   },
-  searchInput: { flex: 1, color: COLORS.text },
   listContent: { padding: SPACING.m },
   card: { marginBottom: SPACING.m, padding: SPACING.m },
   row: {

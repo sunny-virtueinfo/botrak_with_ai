@@ -4,8 +4,10 @@ import Feather from 'react-native-vector-icons/Feather';
 import { useNavigation, DrawerActions } from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import { COLORS, SPACING, SHADOWS, FONTS } from '../../theme';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const CustomHeader = ({
+  // ... props
   title,
   showBack,
   showMenu,
@@ -14,16 +16,26 @@ const CustomHeader = ({
   gradientColors,
   textColor,
   iconColor,
+  onBackPress,
 }) => {
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
+
+  // Default to Primary Gradient for Premium Look
   const activeGradient = gradientColors ||
     COLORS.gradients?.primary || ['#4F46E5', '#4338CA'];
+
   const isDefault = !gradientColors;
 
+  // Default text/icon should be WHITE for the premium gradient
   const themeTextColor = textColor || (isDefault ? '#FFFFFF' : COLORS.text);
   const themeIconColor = iconColor || (isDefault ? '#FFFFFF' : COLORS.text);
 
   const handleBack = () => {
+    if (onBackPress) {
+      onBackPress();
+      return;
+    }
     if (navigation.canGoBack()) {
       navigation.goBack();
     } else {
@@ -68,19 +80,25 @@ const CustomHeader = ({
 
   if (transparent) {
     return (
-      <View style={[styles.container, styles.transparent]}>
+      <View
+        style={[
+          styles.container,
+          styles.transparent,
+          { paddingTop: insets.top, height: 60 + insets.top },
+        ]}
+      >
         <HeaderContent />
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { height: 60 + insets.top }]}>
       <LinearGradient
         colors={activeGradient}
-        style={styles.gradient}
+        style={[styles.gradient, { paddingTop: insets.top }]}
         start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 0 }}
+        end={{ x: 1, y: 1 }}
       >
         <HeaderContent />
       </LinearGradient>
@@ -90,25 +108,27 @@ const CustomHeader = ({
 
 const styles = StyleSheet.create({
   container: {
-    height: 60,
     width: '100%',
-    ...SHADOWS.soft,
     backgroundColor: 'transparent',
     zIndex: 100,
+    ...SHADOWS.medium, // Good elevation
+    shadowColor: '#000', // Standard shadow color
+    shadowOpacity: 0.15,
   },
   gradient: {
     flex: 1,
     paddingHorizontal: SPACING.m,
-    justifyContent: 'center',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   transparent: {
     paddingHorizontal: SPACING.m,
-    justifyContent: 'center',
   },
   contentContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    paddingVertical: SPACING.s,
   },
   leftContainer: {
     width: 44,
@@ -123,14 +143,17 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 18,
     fontWeight: '700',
-    color: COLORS.text,
+    color: '#FFFFFF',
     letterSpacing: 0.5,
     fontFamily: FONTS?.bold,
+    // Removed uppercase and heavy text shadow for a cleaner "Corporate" look
   },
   iconBtn: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.02)',
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)', // Light background
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
   },
 });
 

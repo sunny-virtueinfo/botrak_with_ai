@@ -25,7 +25,12 @@ const GenericDropdown = ({
 
   // Find selected item safely
   const selectedItem = safeData.find(item => {
-    const itemVal = typeof item === 'object' ? item.value || item.id : item;
+    const itemVal =
+      typeof item === 'object'
+        ? item.value !== undefined
+          ? item.value
+          : item.id
+        : item;
     return String(itemVal) === String(value);
   });
 
@@ -68,7 +73,11 @@ const GenericDropdown = ({
               }
               renderItem={({ item }) => {
                 const itemVal =
-                  typeof item === 'object' ? item.value || item.id : item;
+                  typeof item === 'object'
+                    ? item.value !== undefined
+                      ? item.value
+                      : item.id
+                    : item;
                 const itemLabel =
                   typeof item === 'object' ? item.label || item.name : item;
                 return (

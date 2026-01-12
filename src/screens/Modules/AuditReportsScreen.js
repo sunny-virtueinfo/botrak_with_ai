@@ -51,7 +51,7 @@ const AuditReportsScreen = ({ navigation, route }) => {
 
   const renderItem = ({ item }) => (
     <TouchableOpacity
-      activeOpacity={0.9}
+      activeOpacity={0.7}
       onPress={() =>
         navigation.navigate('AuditReportDetails', {
           auditId: item.id,

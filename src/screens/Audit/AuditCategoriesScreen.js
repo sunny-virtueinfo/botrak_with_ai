@@ -201,7 +201,7 @@ const AuditCategoriesScreen = ({ route, navigation }) => {
             >
               <Text style={styles.fabOptionLabel}>View All Assets</Text>
               <LinearGradient
-                colors={COLORS.gradients.info}
+                colors={COLORS.gradients.success}
                 style={styles.miniFab}
               >
                 <Feather name="list" size={20} color="white" />
@@ -214,7 +214,7 @@ const AuditCategoriesScreen = ({ route, navigation }) => {
       {/* Main FAB */}
       <TouchableOpacity
         style={styles.fab}
-        activeOpacity={0.9}
+        activeOpacity={0.7}
         onPress={() => setShowFabOptions(!showFabOptions)}
       >
         <LinearGradient
@@ -260,7 +260,7 @@ const styles = StyleSheet.create({
   },
 
   list: {
-    paddingHorizontal: SPACING.s,
+    paddingHorizontal: SPACING.m,
     paddingBottom: 100, // Space for FAB
   },
   columnWrapper: {
