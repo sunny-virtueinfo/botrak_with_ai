@@ -19,6 +19,7 @@ import GlassCard from '../../components/premium/GlassCard';
 import GradientButton from '../../components/premium/GradientButton';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
+import { useToast } from '../../context/ToastContext';
 
 const AuditAssetListScreen = ({ route, navigation }) => {
   const { auditId, locationId, categoryId, title, organizationId, plantId } =
@@ -32,7 +33,7 @@ const AuditAssetListScreen = ({ route, navigation }) => {
   const [hasMore, setHasMore] = useState(true);
   const [searchValue, setSearchValue] = useState('');
   const [isLoadMore, setIsLoadMore] = useState(false);
-
+  const { showToast } = useToast();
   const api = useApiService();
 
   // Form State
@@ -109,8 +110,6 @@ const AuditAssetListScreen = ({ route, navigation }) => {
         }
       }
 
-      console.log('Processed newAssets length:', newAssets.length);
-
       if (newAssets.length > 0 || responseData.success) {
         // Accept if we found assets OR success is true (even if empty list)
         if (reset) {
@@ -177,26 +176,28 @@ const AuditAssetListScreen = ({ route, navigation }) => {
 
   const handleSubmitAudit = async () => {
     try {
-      const detailedNotes = `Condition: ${condition}, Usage: ${usage}, Remark: ${remark}`;
       const assetsData = [
         {
           id: selectedAsset.id,
-          status: selectedAsset.status || 'available',
-          notes: detailedNotes,
           condition: condition,
           usage: usage,
           remark: remark,
+          asset_type: selectedAsset.asset_type,
+          location_id: locationId,
         },
       ];
 
-      const response = await api.submitAuditEntry(
-        organizationId,
-        auditId,
-        assetsData,
-      );
+      const payload = {
+        audit_id: auditId,
+        location_id: locationId,
+        organization_asset: assetsData,
+      };
+
+      const response = await api.submitAuditEntry(organizationId, payload);
+      console.log('DEBUG: submitAuditEntry response:', response);
       if (response.data.success) {
         setModalVisible(false);
-        showToast(response.data.message, 'success');
+        showToast("Audit submitted successfully", 'success');
         loadAssets();
       } else {
         showToast(response.data.error, 'error');

@@ -6,6 +6,8 @@ buildscript {
         targetSdkVersion = 36
         ndkVersion = "27.1.12297006"
         kotlinVersion = "2.1.20"
+
+        REACT_NATIVE_NODE_MODULES_DIR = "${rootDir}/../node_modules/react-native"
     }
     repositories {
         google()
@@ -15,6 +17,18 @@ buildscript {
         classpath("com.android.tools.build:gradle")
         classpath("com.facebook.react:react-native-gradle-plugin")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin")
+    }
+    subprojects {
+        afterEvaluate {project ->
+            if (project.hasProperty("android")) {
+                project.android {
+                    if (namespace == null) {
+                        namespace project.group
+                    }
+                    compileSdkVersion rootProject.ext.compileSdkVersion
+                }
+            }
+        }
     }
 }
 

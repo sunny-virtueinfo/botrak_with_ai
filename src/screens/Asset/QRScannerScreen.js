@@ -66,6 +66,7 @@ const QRScannerScreen = ({ navigation, route }) => {
   const [condition, setCondition] = useState('working');
   const [usage, setUsage] = useState('medium');
   const [remark, setRemark] = useState('');
+  const [locationMismatch, setLocationMismatch] = useState(false);
 
   React.useEffect(() => {
     (async () => {
@@ -135,7 +136,7 @@ const QRScannerScreen = ({ navigation, route }) => {
         );
       }
 
-      const asset = response.data.organization_asset || response.data.data;
+      const asset = response.data.audit_log || response.data.organization_asset || response.data.data;
 
       if (response.data.success && asset) {
         if (mode === 'audit') {
@@ -144,6 +145,12 @@ const QRScannerScreen = ({ navigation, route }) => {
           setCondition('working');
           setUsage('medium');
           setRemark('');
+          // Check for location_mismatch in the main response or audit_log
+          const isMismatch =
+            response.data.location_mismatch ||
+            (response.data.audit_log && response.data.audit_log.location_mismatch);
+          setLocationMismatch(!!isMismatch);
+
           setModalVisible(true);
           setIsProcessing(false);
           // Note: modalVisible=true will keep camera inactive
@@ -423,9 +430,15 @@ const QRScannerScreen = ({ navigation, route }) => {
         >
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Verify Asset</Text>
-            <Text style={styles.assetName}>
-              {scannedAsset?.name || scannedAsset?.asset_code}
-            </Text>
+            {scannedAsset?.name && (
+              <Text style={styles.assetName}>
+                {scannedAsset?.name || scannedAsset?.asset_code}
+              </Text>
+            )}
+
+            {locationMismatch && (
+              <Text style={styles.errorText}>Location mismatch</Text>
+            )}
 
             <Text style={styles.label}>Condition</Text>
             <View style={styles.chipContainer}>
@@ -619,6 +632,12 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     marginBottom: 4,
   },
+  errorText: {
+    color: COLORS.error,
+    fontWeight: 'bold',
+    marginBottom: SPACING.m,
+    fontSize: 16,
+  },
   assetName: { fontSize: 16, color: COLORS.primary, marginBottom: SPACING.l },
   label: {
     fontSize: 14,
@@ -635,6 +654,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     marginRight: 8,
     borderWidth: 1,
+    marginBottom: SPACING.s,
     borderColor: COLORS.border,
   },
   activeChip: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },

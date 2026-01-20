@@ -29,6 +29,7 @@ const SideMenu = ({ navigation, state }) => {
   const [approvalCount, setApprovalCount] = useState(0);
   const [activeOrgName, setActiveOrgName] = useState('');
   const { showToast } = useToast();
+  const api = useApiService();
 
   useEffect(() => {
     const loadOrgName = async () => {
@@ -43,8 +44,16 @@ const SideMenu = ({ navigation, state }) => {
             setActiveOrgName(parsed.organization_name);
           }
         }
+
+        // Fetch Approval Count
+        if (user?.recent_organization_id) {
+          const res = await api.getPendingRequests(user.recent_organization_id);
+          // Check for count directly or array length
+          const count = res?.data?.count ?? (Array.isArray(res?.data) ? res.data.length : (Array.isArray(res?.data?.data) ? res.data.data.length : 0));
+          setApprovalCount(count);
+        }
       } catch (e) {
-        console.error('Failed to load active org name', e);
+        console.error('Failed to load active org name or count', e);
       }
     };
     loadOrgName();

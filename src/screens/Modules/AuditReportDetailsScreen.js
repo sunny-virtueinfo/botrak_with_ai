@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
+import { format } from 'date-fns';
 import {
   View,
   Text,
@@ -194,7 +195,12 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
             {item.asset_code || item.name || 'Unknown Asset'}
           </Text>
           {item.location_name && (
-            <Text style={styles.subText}>Loc: {item.location_name}</Text>
+            <Text style={styles.subText}>Main Loc: {item.location_name}</Text>
+          )}
+          {item.current_location_name && (
+            <Text style={styles.subText}>
+              Current Loc: {item.current_location_name}
+            </Text>
           )}
           {item.user_name && (
             <Text style={styles.subText}>User: {item.user_name}</Text>
@@ -238,16 +244,16 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
                   // Default colors (Green/Red for Found/Not Found) for Case 1, else generic Surface/Primary
                   activeTab === 'case1'
                     ? {
-                        backgroundColor:
-                          item.found === 'Found'
-                            ? COLORS.success + '20'
-                            : COLORS.error + '20',
-                      }
+                      backgroundColor:
+                        item.found === 'Found'
+                          ? COLORS.success + '20'
+                          : COLORS.error + '20',
+                    }
                     : {
-                        backgroundColor: COLORS.surface,
-                        borderWidth: 1,
-                        borderColor: COLORS.border,
-                      },
+                      backgroundColor: COLORS.surface,
+                      borderWidth: 1,
+                      borderColor: COLORS.border,
+                    },
                   // Apply Highlight - REMOVED as per request
                   // getHighlightStyle(valueToShow)
                 ]}
@@ -257,14 +263,14 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
                     styles.badgeText,
                     activeTab === 'case1'
                       ? {
-                          color:
-                            item.found === 'Found'
-                              ? COLORS.success
-                              : COLORS.error,
-                        }
+                        color:
+                          item.found === 'Found'
+                            ? COLORS.success
+                            : COLORS.error,
+                      }
                       : {
-                          color: COLORS.text,
-                        },
+                        color: COLORS.text,
+                      },
                   ]}
                   numberOfLines={1}
                 >
@@ -295,6 +301,23 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
           <View style={[styles.detailItem]}>
             <Feather name="clock" size={12} color={COLORS.textLight} />
             <Text style={styles.detailText}>{capitalize(item.usage)}</Text>
+          </View>
+        )}
+        {item.mode && (
+          <View style={[styles.detailItem]}>
+            <Feather name="settings" size={12} color={COLORS.textLight} />
+            <Text style={styles.detailText}>Mode: {item.mode}</Text>
+          </View>
+        )}
+        {item.updated_at && (
+          <View style={[styles.detailItem]}>
+            <Feather name="calendar" size={12} color={COLORS.textLight} />
+            <Text style={styles.detailText}>
+              Updated:{' '}
+              {item.updated_at
+                ? format(new Date(item.updated_at), 'dd-MM-yyyy')
+                : ''}
+            </Text>
           </View>
         )}
       </View>

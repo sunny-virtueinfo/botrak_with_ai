@@ -144,13 +144,12 @@ export const useApiService = () => {
     });
   };
 
-  const submitAuditEntry = async (orgId = activeOrgId, auditId, assetsData) => {
-    // assetsData structure: [{ id: assetId, status: '...', notes: '...' }]
+  const submitAuditEntry = async (orgId = activeOrgId, payload) => {
     return client.put(
       API_ENDPOINTS.UPDATE_BY_AUDIT(orgId),
       {
-        audit_id: auditId,
-        assets: assetsData,
+        from_mobile: true,
+        ...payload,
       },
       { headers: { token: user?.token } },
     );

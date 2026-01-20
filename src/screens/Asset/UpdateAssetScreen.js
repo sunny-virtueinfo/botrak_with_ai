@@ -11,8 +11,9 @@ import {
   Platform,
   ActionSheetIOS,
   Image,
+  PermissionsAndroid,
 } from 'react-native';
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import { launchCamera } from 'react-native-image-picker';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { COLORS, SPACING, SHADOWS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
@@ -74,43 +75,52 @@ const UpdateAssetScreen = ({ route, navigation }) => {
   const [deletedImageIds, setDeletedImageIds] = useState([]);
   const [newImages, setNewImages] = useState([]);
 
-  const handleSelectImage = () => {
-    const options = {
-      mediaType: 'photo',
-      maxWidth: 1024,
-      maxHeight: 1024,
-      quality: 0.8,
-    };
+  const checkPermissionForEditImage = async () => {
+    try {
+      if (Platform.OS === 'android') {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.CAMERA,
+          {
+            title: 'Camera Permission',
+            message: 'This app needs access to your camera to take photos.',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          editImage();
+        } else {
+          showToast('Camera permission denied', 'error');
+        }
+      } else {
+        editImage();
+      }
+    } catch (error) {
+      console.log('Permission error', error);
+      showToast('Failed to request permission', 'error');
+    }
+  };
 
-    const onImagePicked = response => {
-      if (response.didCancel) return;
-      if (response.errorCode) {
-        Alert.alert('Error', response.errorMessage);
+  const editImage = async () => {
+    try {
+      const result = await launchCamera({
+        title: 'Select Asset',
+        quality: 0.6,
+      });
+      if (result.didCancel) {
         return;
       }
-      if (response.assets && response.assets.length > 0) {
-        const asset = response.assets[0];
-        const newImage = {
-          uri: asset.uri,
-          type: asset.type,
-          name: asset.fileName || 'upload.jpg',
-        };
-        setNewImages(prev => [...prev, newImage]);
-      }
-    };
-
-    Alert.alert('Select Photo', 'Choose an option', [
-      {
-        text: 'Camera',
-        onPress: () => launchCamera(options, onImagePicked),
-      },
-      {
-        text: 'Gallery',
-        onPress: () => launchImageLibrary(options, onImagePicked),
-      },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+      const newImages = [...newImages, result.assets[0]];
+      console.log('addImage 1', newImages);
+      setNewImages(newImages);
+    } catch (error) {
+      console.log('error', error);
+    }
   };
+  // Alias for compatibility/ease of use in button
+  const handleSelectImage = checkPermissionForEditImage;
+
 
   const handleRemoveNewImage = index => {
     setNewImages(prev => prev.filter((_, i) => i !== index));
