@@ -12,9 +12,10 @@ export const SPACING = {
 };
 
 export const FONTS = {
-  regular: 'System', // Use Inter if available later
-  medium: 'System',
-  bold: 'System',
+  regular: 'OpenSans-Regular',
+  medium: 'OpenSans-SemiBold',
+  bold: 'OpenSans-Bold',
+  italic: 'italic',
 };
 
 export const SHADOWS = {

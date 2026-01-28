@@ -14,6 +14,7 @@ import GradientButton from '../../components/premium/GradientButton';
 import GlassCard from '../../components/premium/GlassCard';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import { useApiService } from '../../services/ApiService';
+import { useCustomModal } from '../../context/ModalContext';
 
 const AssetDetailScreen = ({ route, navigation }) => {
   const { asset, organizationId } = route.params;
@@ -22,6 +23,7 @@ const AssetDetailScreen = ({ route, navigation }) => {
   const [notes, setNotes] = useState('');
   const [assignee, setAssignee] = useState('');
   const api = useApiService();
+  const { showModal } = useCustomModal();
 
   const EditButton = () => (
     <TouchableOpacity
@@ -49,7 +51,7 @@ const AssetDetailScreen = ({ route, navigation }) => {
       };
 
       if (!asset.asset_register_id) {
-        alert('Missing Asset Register ID');
+        showModal('Error', 'Missing Asset Register ID');
         return;
       }
 
@@ -69,14 +71,14 @@ const AssetDetailScreen = ({ route, navigation }) => {
         );
       }
 
-      Alert.alert(
+      showModal(
         'Success',
         `Asset ${actionType === 'checkin' ? 'Checked In' : 'Checked Out'}`,
       );
       setModalVisible(false);
       navigation.goBack();
     } catch (e) {
-      Alert.alert('Error', 'Failed to update asset');
+      showModal('Error', 'Failed to update asset');
       console.error(e);
     }
   };
@@ -131,7 +133,7 @@ const AssetDetailScreen = ({ route, navigation }) => {
 
       {/* Action Footer */}
       <View style={styles.footer}>
-        {asset.status === 'assigned' ? (
+        {(asset.checkin_checkout || '').toLowerCase() === 'checkout' ? (
           <GradientButton
             title="Check In"
             colors={COLORS.gradients.success}

@@ -12,6 +12,7 @@ import { useApiService } from '../../services/ApiService';
 import { COLORS, SPACING, SHADOWS, FONTS } from '../../theme';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
+import { useCustomModal } from '../../context/ModalContext';
 import GlassCard from '../../components/premium/GlassCard';
 import Feather from 'react-native-vector-icons/Feather';
 
@@ -20,6 +21,7 @@ const PlantSelectionScreen = ({ navigation, route }) => {
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState('');
   const api = useApiService();
+  const { showModal } = useCustomModal();
 
   const {
     organizationId,
@@ -34,23 +36,19 @@ const PlantSelectionScreen = ({ navigation, route }) => {
   const fetchPlants = async () => {
     setLoading(true);
     try {
-      // Need active Organization ID. Preferably passed in params, else fallback.
-      // If organizationId is missing, we might need to get it from Auth or Storage.
-      // Assuming it's passed for now as it usually is in this app's flow.
       const res = await api.getPlants(organizationId);
       if (res.data && res.data.success) {
         setPlants(res.data.plants || []);
       }
     } catch (e) {
       console.error('Fetch Plants Error', e);
-      Alert.alert('Error', 'Failed to load plants.');
+      showModal('Error', 'Failed to load plants.');
     } finally {
       setLoading(false);
     }
   };
 
   const handlePlantSelect = plant => {
-    // Navigate to the next screen (AssetList) with params
     navigation.navigate(nextScreen, {
       plantId: plant.id,
       plantName: plant.name,
@@ -189,6 +187,7 @@ const styles = StyleSheet.create({
   emptyText: {
     color: COLORS.textLight,
     fontSize: 16,
+    fontStyle: FONTS.italic,
   },
 });
 

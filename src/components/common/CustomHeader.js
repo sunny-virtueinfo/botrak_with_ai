@@ -87,7 +87,9 @@ const CustomHeader = ({
           { paddingTop: insets.top, height: 60 + insets.top },
         ]}
       >
-        <HeaderContent />
+        <View style={styles.bottomAlignedContent}>
+          <HeaderContent />
+        </View>
       </View>
     );
   }
@@ -96,11 +98,13 @@ const CustomHeader = ({
     <View style={[styles.container, { height: 60 + insets.top }]}>
       <LinearGradient
         colors={activeGradient}
-        style={[styles.gradient, { paddingTop: insets.top }]}
+        style={[styles.gradient]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
       >
-        <HeaderContent />
+        <View style={styles.bottomAlignedContent}>
+          <HeaderContent />
+        </View>
       </LinearGradient>
     </View>
   );
@@ -117,18 +121,23 @@ const styles = StyleSheet.create({
   },
   gradient: {
     flex: 1,
-    paddingHorizontal: SPACING.m,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
   },
   transparent: {
+    paddingBottom: 0,
+    paddingHorizontal: SPACING.m,
+  },
+  bottomAlignedContent: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingBottom: Platform.OS !== 'ios' ? SPACING.s : SPACING.m,
     paddingHorizontal: SPACING.m,
   },
   contentContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: SPACING.s,
   },
   leftContainer: {
     width: 44,

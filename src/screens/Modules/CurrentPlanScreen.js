@@ -5,6 +5,7 @@ import Feather from 'react-native-vector-icons/Feather';
 import { COLORS, SPACING, FONTS, SHADOWS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
 import { useToast } from '../../context/ToastContext';
+import { useCustomModal } from '../../context/ModalContext';
 import GlassCard from '../../components/premium/GlassCard';
 import GradientButton from '../../components/premium/GradientButton';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
@@ -15,6 +16,7 @@ const CurrentPlanScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const api = useApiService();
   const { showToast } = useToast();
+  const { showModal } = useCustomModal();
 
   useEffect(() => {
     fetchPlan();
@@ -36,7 +38,7 @@ const CurrentPlanScreen = ({ route, navigation }) => {
   };
 
   const handleCancelPlan = () => {
-    Alert.alert(
+    showModal(
       'Cancel Plan',
       'Are you sure you want to cancel your current plan?',
       [

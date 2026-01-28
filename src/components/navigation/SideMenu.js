@@ -49,7 +49,13 @@ const SideMenu = ({ navigation, state }) => {
         if (user?.recent_organization_id) {
           const res = await api.getPendingRequests(user.recent_organization_id);
           // Check for count directly or array length
-          const count = res?.data?.count ?? (Array.isArray(res?.data) ? res.data.length : (Array.isArray(res?.data?.data) ? res.data.data.length : 0));
+          const count =
+            res?.data?.count ??
+            (Array.isArray(res?.data)
+              ? res.data.length
+              : Array.isArray(res?.data?.data)
+              ? res.data.data.length
+              : 0);
           setApprovalCount(count);
         }
       } catch (e) {
@@ -113,7 +119,7 @@ const SideMenu = ({ navigation, state }) => {
 
     const newOrg = {
       organization_id: org.organization_id,
-      organization_name: org.organization_name || org.name, // Prioritize organization_name
+      organization_name: org.organization_name || org.name,
       role: extractedRole,
     };
     // Update local state immediately

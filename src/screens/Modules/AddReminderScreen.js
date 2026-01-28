@@ -21,7 +21,6 @@ const AddReminderScreen = ({ navigation, route }) => {
   const initialAssetCode = route.params?.assetCode || '';
   const assetId = route.params?.assetId;
 
-  // Form State
   const [assetCode, setAssetCode] = useState(initialAssetCode);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -34,7 +33,6 @@ const AddReminderScreen = ({ navigation, route }) => {
   });
   const [loading, setLoading] = useState(false);
 
-  // Calendar State
   const [showCalendar, setShowCalendar] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -59,7 +57,6 @@ const AddReminderScreen = ({ navigation, route }) => {
 
     try {
       setLoading(true);
-      // Convert DD-MM-YYYY to YYYY-MM-DD for API
       const [day, month, year] = date.split('-');
       const apiDate = `${year}-${month}-${day}`;
 
@@ -89,7 +86,6 @@ const AddReminderScreen = ({ navigation, route }) => {
     }
   };
 
-  // Calendar Helpers
   const generateCalendar = (year, month) => {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -205,7 +201,7 @@ const AddReminderScreen = ({ navigation, route }) => {
           onChangeText={setAssetCode}
           placeholder="Enter Asset Code"
           placeholderTextColor={COLORS.textLight}
-          editable={!assetId} // If assetId exists, likely readonly/prefilled
+          editable={!assetId}
         />
       </View>
 
@@ -290,7 +286,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.border,
     fontSize: 16,
     color: COLORS.text,
   },
@@ -301,7 +297,7 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 14,
     borderRadius: 10,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.gradients.background[0],
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -346,7 +342,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     margin: 2,
   },
-  activeDayCell: { backgroundColor: '#F3F4F6', borderRadius: 20 },
+  activeDayCell: {
+    backgroundColor: COLORS.gradients.background[0],
+    borderRadius: 20,
+  },
   dayText: { color: COLORS.text },
   closeButton: { marginTop: SPACING.m, alignSelf: 'center', padding: 10 },
   closeButtonText: { color: COLORS.primary, fontWeight: 'bold' },

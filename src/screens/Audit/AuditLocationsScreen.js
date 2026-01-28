@@ -51,15 +51,14 @@ const AuditLocationsScreen = ({ route, navigation }) => {
     navigation.navigate('AuditCategories', {
       auditId,
       locationId: selectedLocation.id,
-      plantId: selectedLocation.plant_id, // Required for next API call
+      plantId: selectedLocation.plant_id,
       locationName: selectedLocation.name,
-      organizationId, // Pass orgId
+      organizationId,
     });
   };
 
   const handleQRScan = () => {
     setModalVisible(false);
-    // Navigate to QR Scanner with 'audit' mode
     navigation.navigate('QRScanner', {
       mode: 'audit',
       auditId,

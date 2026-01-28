@@ -10,9 +10,10 @@ import {
   useWindowDimensions,
   Alert,
 } from 'react-native';
-import { COLORS, SPACING, SHADOWS } from '../../theme';
+import { COLORS, SPACING, SHADOWS, FONTS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
 import { useToast } from '../../context/ToastContext';
+import { useCustomModal } from '../../context/ModalContext';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
@@ -20,6 +21,7 @@ import Loader from '../../components/common/Loader';
 const AssetAssignmentScreen = ({ navigation, route }) => {
   const api = useApiService();
   const { showToast } = useToast();
+  const { showModal } = useCustomModal();
   const { organizationId, registerId: paramRegisterId } = route.params || {};
 
   const [registerId, setRegisterId] = useState(paramRegisterId || null);
@@ -40,6 +42,7 @@ const AssetAssignmentScreen = ({ navigation, route }) => {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
+      setIndex(0);
       const scanned = route.params?.scannedAsset;
       if (scanned) {
         handleScannedAsset(scanned);
@@ -54,7 +57,13 @@ const AssetAssignmentScreen = ({ navigation, route }) => {
   const loadData = async () => {
     setLoading(true);
     // 1. Ensure we have a register ID
-    let currentRegisterId = registerId;
+    let currentRegisterId = paramRegisterId || registerId;
+
+    // Sync state if param exists and differs
+    if (paramRegisterId && paramRegisterId !== registerId) {
+      setRegisterId(paramRegisterId);
+    }
+
     if (!currentRegisterId) {
       try {
         if (!organizationId) return;
@@ -74,7 +83,6 @@ const AssetAssignmentScreen = ({ navigation, route }) => {
         console.error('Failed to load registers', e);
       }
     }
-
     if (currentRegisterId) {
       await Promise.all([
         loadAssets(currentRegisterId, 'assigned'),
@@ -90,13 +98,11 @@ const AssetAssignmentScreen = ({ navigation, route }) => {
         page: 1,
         type: type,
       };
-
       const response = await api.getAssetListForAssignment(
         organizationId,
         regId,
         params,
       );
-
       if (response.data && response.data.success) {
         const list =
           response.data.organization_assets || response.data.data || [];
@@ -116,7 +122,7 @@ const AssetAssignmentScreen = ({ navigation, route }) => {
       !asset.assigned_to && !asset.user_id && asset.status !== 'assigned';
 
     if (isUnassigned) {
-      Alert.alert(
+      showModal(
         'Asset Scanned',
         `Found Unassigned Asset: ${
           asset.asset_description || asset.asset_code || asset.name
@@ -129,7 +135,7 @@ const AssetAssignmentScreen = ({ navigation, route }) => {
     } else {
       const assignedName =
         asset.assigned_to?.name || asset.user_name || 'someone';
-      Alert.alert(
+      showModal(
         'Asset Scanned',
         `Asset: ${
           asset.asset_description || asset.asset_code
@@ -144,7 +150,6 @@ const AssetAssignmentScreen = ({ navigation, route }) => {
 
   // --- Assigned Actions ---
   const handleUnassignClick = asset => {
-    console.log('handleUnassignClick:', asset);
     setSelectedAssetForUnassign(asset);
     setUnassignReason('');
     setUnassignModalVisible(true);
@@ -312,49 +317,57 @@ const AssetAssignmentScreen = ({ navigation, route }) => {
         navigation.navigate('AssetRegisterSelection', { organizationId })
       }
     >
-      {/* Main Content */}
-      <View style={{ flex: 1 }}>
-        {/* Custom Tabs */}
-        <View style={styles.tabHeader}>
-          <TouchableOpacity
-            style={[styles.tabBtn, index === 0 && styles.activeTabBtn]}
-            onPress={() => setIndex(0)}
-          >
-            <Text style={[styles.tabText, index === 0 && styles.activeTabText]}>
-              Assigned
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.tabBtn, index === 1 && styles.activeTabBtn]}
-            onPress={() => setIndex(1)}
-          >
-            <Text style={[styles.tabText, index === 1 && styles.activeTabText]}>
-              Unassigned
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-          <FlatList
-            data={index === 0 ? assignedAssets : unassignedAssets}
-            renderItem={index === 0 ? renderAssignedItem : renderUnassignedItem}
-            keyExtractor={item =>
-              String(item.id || item.asset_id || Math.random())
-            }
-            contentContainerStyle={styles.list}
-            ListEmptyComponent={
-              <Text style={styles.emptyText}>
-                {index === 0
-                  ? 'No assigned assets found.'
-                  : 'No unassigned assets found.'}
+      {loading ? (
+        <Loader visible={true} size="large" />
+      ) : (
+        <View style={{ flex: 1 }}>
+          {/* Custom Tabs */}
+          <View style={styles.tabHeader}>
+            <TouchableOpacity
+              style={[styles.tabBtn, index === 0 && styles.activeTabBtn]}
+              onPress={() => setIndex(0)}
+            >
+              <Text
+                style={[styles.tabText, index === 0 && styles.activeTabText]}
+              >
+                Assigned
               </Text>
-            }
-            refreshing={loading}
-            onRefresh={loadData}
-          />
-        </View>
-      </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tabBtn, index === 1 && styles.activeTabBtn]}
+              onPress={() => setIndex(1)}
+            >
+              <Text
+                style={[styles.tabText, index === 1 && styles.activeTabText]}
+              >
+                Unassigned
+              </Text>
+            </TouchableOpacity>
+          </View>
 
+          <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+            <FlatList
+              data={index === 0 ? assignedAssets : unassignedAssets}
+              renderItem={
+                index === 0 ? renderAssignedItem : renderUnassignedItem
+              }
+              keyExtractor={item =>
+                String(item.id || item.asset_id || Math.random())
+              }
+              contentContainerStyle={styles.list}
+              ListEmptyComponent={
+                <Text style={styles.emptyText}>
+                  {index === 0
+                    ? 'No assigned assets found.'
+                    : 'No unassigned assets found.'}
+                </Text>
+              }
+              refreshing={loading}
+              onRefresh={loadData}
+            />
+          </View>
+        </View>
+      )}
       {/* Unassign Reason Modal */}
       <Modal
         visible={unassignModalVisible}
@@ -421,7 +434,7 @@ const styles = StyleSheet.create({
   },
   assetName: { fontSize: 16, fontWeight: 'bold', color: COLORS.text },
   statusBadge: {
-    backgroundColor: '#E0F2F1',
+    backgroundColor: COLORS.successLight,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -429,10 +442,15 @@ const styles = StyleSheet.create({
     fontSize: 10,
     overflow: 'hidden',
   },
-  assetType: { fontSize: 12, color: COLORS.textLight, marginTop: 2 },
+  assetType: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    marginTop: 2,
+    fontStyle: FONTS.italic,
+  },
   details: { fontSize: 14, color: COLORS.text, flex: 1 },
   icon: { marginRight: 8 },
-  divider: { height: 1, backgroundColor: '#eee', marginVertical: 8 },
+  divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 8 },
   row: { flexDirection: 'row', alignItems: 'center', marginBottom: 4 },
   highlight: { fontWeight: 'bold', color: COLORS.primary },
   clickHint: {
@@ -441,7 +459,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 5,
   },
-  emptyText: { textAlign: 'center', marginTop: 30, color: COLORS.textLight },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 30,
+    color: COLORS.textLight,
+    fontStyle: FONTS.italic,
+  },
 
   actionRow: { marginTop: 10, alignItems: 'flex-end' },
   unassignBtn: {
@@ -479,7 +502,7 @@ const styles = StyleSheet.create({
   },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
   modalBtn: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
-  cancelBtn: { backgroundColor: '#F3F4F6' },
+  cancelBtn: { backgroundColor: COLORS.gradients.background[0] },
   confirmBtn: { backgroundColor: COLORS.error }, // Red for unassign
   btnTextWhite: { color: 'white', fontWeight: 'bold' },
   btnTextBlack: { color: COLORS.text, fontWeight: 'bold' },

@@ -6,8 +6,9 @@ import {
   TouchableOpacity,
   Modal,
   FlatList,
+  Platform,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Feather from 'react-native-vector-icons/Feather';
 import { COLORS, SPACING, SHADOWS } from '../../theme';
 
 const GenericDropdown = ({
@@ -17,6 +18,7 @@ const GenericDropdown = ({
   onValueChange,
   placeholder,
   error,
+  style,
 }) => {
   const [visible, setVisible] = useState(false);
 
@@ -43,7 +45,7 @@ const GenericDropdown = ({
   return (
     <View style={styles.dropdownContainer}>
       <TouchableOpacity
-        style={[styles.dropdownBtn, error && styles.inputError]}
+        style={[styles.dropdownBtn, style, error && styles.inputError]}
         onPress={() => setVisible(true)}
       >
         <Text
@@ -51,7 +53,9 @@ const GenericDropdown = ({
         >
           {displayValue}
         </Text>
-        <Icon name="chevron-down" size={20} color={COLORS.textLight} />
+        <View style={styles.iconContainer}>
+          <Feather name="chevron-down" size={20} color={COLORS.textLight} />
+        </View>
       </TouchableOpacity>
 
       <Modal
@@ -90,7 +94,13 @@ const GenericDropdown = ({
                   >
                     <Text style={styles.modalItemText}>{itemLabel}</Text>
                     {String(itemVal) === String(value) && (
-                      <Icon name="check" size={18} color={COLORS.primary} />
+                      <View style={styles.checkIconContainer}>
+                        <Feather
+                          name="check"
+                          size={18}
+                          color={COLORS.primary}
+                        />
+                      </View>
                     )}
                   </TouchableOpacity>
                 );
@@ -115,7 +125,7 @@ const styles = StyleSheet.create({
   dropdownBtn: {
     backgroundColor: 'white',
     borderRadius: 8,
-    padding: SPACING.m,
+    paddingHorizontal: SPACING.m,
     borderWidth: 1,
     borderColor: COLORS.border,
     flexDirection: 'row',
@@ -123,8 +133,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   inputError: { borderColor: COLORS.error },
-  dropdownText: { color: COLORS.text, fontSize: 14 },
+  dropdownText: {
+    color: COLORS.text,
+    fontSize: 14,
+    flex: 1,
+    marginRight: SPACING.s,
+  },
   placeholderText: { color: COLORS.textLight },
+  iconContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...(Platform.OS === 'ios' && {
+      width: 24,
+      height: 24,
+    }),
+  },
 
   modalOverlay: {
     flex: 1,
@@ -152,7 +175,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
-  modalItemText: { fontSize: 16, color: COLORS.text },
+  modalItemText: {
+    fontSize: 16,
+    color: COLORS.text,
+    flex: 1,
+  },
+  checkIconContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...(Platform.OS === 'ios' && {
+      width: 20,
+      height: 20,
+    }),
+  },
   closeBtn: {
     marginTop: 15,
     alignSelf: 'center',

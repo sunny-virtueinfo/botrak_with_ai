@@ -6,6 +6,11 @@ import {
   Modal,
   FlatList,
   StyleSheet,
+  KeyboardAvoidingView,
+  ScrollView,
+  TouchableOpacity,
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
 import LinearGradient from 'react-native-linear-gradient';
@@ -19,6 +24,9 @@ import { useToast } from '../../context/ToastContext';
 import { COLORS, SPACING, SHADOWS, FONTS } from '../../theme';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
+import NewPickerForPlant from '../../components/common/NewPickerForPlant';
+import NewLocationPicker from '../../components/common/NewLocationPicker';
+import CustomDropDown from '../../components/common/CustomDropDown';
 
 const CONSTANT = {
   checkInOrOut: {
@@ -53,26 +61,16 @@ const CONSTANT = {
   },
 };
 
+const Capitalize = str => {
+  return str ? str.charAt(0).toUpperCase() + str.slice(1) : '';
+};
+
 const CheckInOrOutScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const isFocused = useIsFocused();
   const { showToast } = useToast();
   const api = useApiService();
-
-  const [selectedLocation, setSelectedLocation] = useState(null);
-  const [description, setDescription] = useState('');
-  const [locations, setLocations] = useState([]);
-  const [assetCurrentStatus, setAssetCurrentStatus] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
-  const [isButtonLoading, setIsButtonLoading] = useState(false);
-  const [plants, setPlants] = useState([]);
-  const [selectedPlant, setSelectedPlant] = useState(null);
-
-  // Picker Modal State
-  const [pickerVisible, setPickerVisible] = useState(false);
-  const [pickerType, setPickerType] = useState(null); // 'plant' or 'location'
-
   const {
     checkInOutStatus,
     label,
@@ -84,7 +82,16 @@ const CheckInOrOutScreen = () => {
     assetName,
     subLocation,
     organizationId,
-  } = route.params || {}; // Added safety check
+  } = route.params || {};
+
+  const [selectedLocation, setSelectedLocation] = useState(assetLocationID);
+  const [description, setDescription] = useState('');
+  const [locations, setLocations] = useState([]);
+  const [assetCurrentStatus, setAssetCurrentStatus] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isButtonLoading, setIsButtonLoading] = useState(false);
+  const [plants, setPlants] = useState([]);
+  const [selectedPlant, setSelectedPlant] = useState(null);
 
   useEffect(() => {
     if (isFocused && route.params) {
@@ -92,28 +99,28 @@ const CheckInOrOutScreen = () => {
 
       if (
         label === CONSTANT.assetCheckInOut.checkin.label &&
-        currentStatus !== 'checkin'
+        currentStatus === 'checkin'
       ) {
         showToast('Asset status is not Check-in.', 'warning');
         if (Platform.OS === 'android') {
-          navigation.navigate('CheckInOut');
+          navigation.navigate('CheckInOrOut');
         } else {
           navigation.reset({
             index: 0,
-            routes: [{ name: 'CheckInOut' }],
+            routes: [{ name: 'CheckInOrOut' }],
           });
         }
       } else if (
         label === CONSTANT.assetCheckInOut.checkOut.label &&
-        currentStatus !== 'checkout'
+        currentStatus === 'checkout'
       ) {
         showToast('Asset status is not Check-out.', 'warning');
         if (Platform.OS === 'android') {
-          navigation.navigate('CheckInOut');
+          navigation.navigate('CheckInOrOut');
         } else {
           navigation.reset({
             index: 0,
-            routes: [{ name: 'CheckInOut' }],
+            routes: [{ name: 'CheckInOrOut' }],
           });
         }
       } else {
@@ -125,11 +132,10 @@ const CheckInOrOutScreen = () => {
   const initializeState = async () => {
     try {
       setIsLoading(true);
-      const res = await api.getPlants(organizationId);
+      const res = await api.getPlants(organizationId || undefined);
       if (res.data && res.data.success) {
         setPlants(res.data.plants || []);
 
-        // Set initial plant if provided
         if (plantId) {
           const initialPlant = (res.data.plants || []).find(
             p => p.id === plantId,
@@ -158,7 +164,9 @@ const CheckInOrOutScreen = () => {
 
   const fetchLocations = async (pId, isInitialLoad = false) => {
     try {
-      const res = await api.getLocations(organizationId, pId);
+      console.log('pId', pId);
+      const res = await api.getLocations(organizationId || undefined, pId);
+      console.log('res', res);
       if (res.data && res.data.success) {
         setLocations(res.data.locations || []);
 
@@ -221,14 +229,14 @@ const CheckInOrOutScreen = () => {
       if (assetCurrentStatus === 'Checkout') {
         if (label === CONSTANT.assetCheckInOut.checkOut.label) {
           res = await api.checkOutAsset(
-            organizationId,
+            organizationId || undefined,
             assetRegisterId,
             assetId,
             body,
           );
         } else {
           res = await api.checkInAsset(
-            organizationId,
+            organizationId || undefined,
             assetRegisterId,
             assetId,
             body,
@@ -237,14 +245,14 @@ const CheckInOrOutScreen = () => {
       } else {
         if (label === CONSTANT.assetCheckInOut.checkOut.label) {
           res = await api.checkOutAsset(
-            organizationId,
+            organizationId || undefined,
             assetRegisterId,
             assetId,
             body,
           );
         } else {
           res = await api.checkInAsset(
-            organizationId,
+            organizationId || undefined,
             assetRegisterId,
             assetId,
             body,
@@ -254,7 +262,7 @@ const CheckInOrOutScreen = () => {
 
       if (res.data && res.data.success) {
         showToast(res.data.message || 'Success', 'success');
-        navigation.goBack(); // Go back to module root
+        navigation.goBack();
       } else {
         showToast(res.data?.error || 'Error occurred', 'error');
       }
@@ -266,53 +274,19 @@ const CheckInOrOutScreen = () => {
     }
   };
 
-  const renderPickerModal = () => (
-    <Modal
-      visible={pickerVisible}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={() => setPickerVisible(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>
-            Select {pickerType === 'plant' ? 'Plant' : 'Location'}
-          </Text>
-          <FlatList
-            data={pickerType === 'plant' ? plants : locations}
-            keyExtractor={item => item.id.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.modalItem}
-                onPress={() => {
-                  if (pickerType === 'plant') {
-                    setSelectedPlant(item);
-                    fetchLocations(item.id);
-                  } else {
-                    setSelectedLocation(item);
-                  }
-                  setPickerVisible(false);
-                }}
-              >
-                <Text style={styles.modalItemText}>{item.name}</Text>
-              </TouchableOpacity>
-            )}
-          />
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setPickerVisible(false)}
-          >
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-
   const getHeaderTitle = () => {
     return label === CONSTANT.assetCheckInOut.checkin.label
       ? CONSTANT.checkInOrOut.checkInTitle
       : CONSTANT.checkInOrOut.checkOutTitle || 'Check In/Out';
+  };
+
+  const constant = CONSTANT;
+  const theme = {
+    card: styles.card,
+    labelText: styles.label,
+    valueText: styles.value,
+    button: { backgroundColor: COLORS.primary }, // Mock for color usage
+    buttonText: styles.buttonText,
   };
 
   return (
@@ -328,29 +302,104 @@ const CheckInOrOutScreen = () => {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          {!isLoading && (
-            <View style={{ gap: 15 }}>
-              {/* Asset Info Card */}
-              {/* ... content ... */}
-
-              {/* Submit Button */}
-              <TouchableOpacity style={styles.button} onPress={handleClick}>
-                <LinearGradient
-                  colors={COLORS.gradients.primary}
-                  style={styles.gradientButton}
-                >
-                  <Text style={styles.buttonText}>
-                    {label === CONSTANT.assetCheckInOut.checkin.label
-                      ? CONSTANT.checkInOrOut.button.checkIn
-                      : CONSTANT.checkInOrOut.button.checkOut}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
+        <ScrollView
+          contentContainerStyle={[styles.container, { paddingBottom: 100 }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={[theme.card, { gap: 5, padding: 15 }]}>
+            <View style={styles.headingContainer}>
+              <Text style={theme.labelText}>
+                {constant.checkInOrOut.title.assetCode}
+              </Text>
+              <Text style={theme.valueText}>{assetCode}</Text>
             </View>
+            <View style={styles.headingContainer}>
+              <Text style={theme.labelText}>
+                {constant.checkInOrOut.title.assetType}
+              </Text>
+              <Text style={theme.valueText}>{Capitalize(assetName)}</Text>
+            </View>
+            <View style={styles.headingContainer}>
+              <Text style={theme.labelText}>
+                {constant.checkInOrOut.title.subLocation}
+              </Text>
+              <Text style={theme.valueText}>{subLocation || '-'}</Text>
+            </View>
+          </View>
+
+          {label === constant.assetCheckInOut.checkOut.label && (
+            <>
+              <View style={[theme.card, { gap: 5, padding: 15 }]}>
+                <View>
+                  <Text style={styles.title}>
+                    {constant.checkInOrOut.title.plant}
+                  </Text>
+                  <NewPickerForPlant
+                    plants={plants}
+                    selected={selectedPlant}
+                    valueChange={value => {
+                      setSelectedPlant(value);
+                      fetchLocations(value?.id || value, false);
+                    }}
+                    pickerStyle={{ height: 42 }}
+                  />
+                </View>
+
+                <View>
+                  <Text style={[styles.title, { marginTop: 15 }]}>
+                    {constant.checkInOrOut.title.assetLocation}
+                  </Text>
+                  <NewLocationPicker
+                    selected={selectedLocation}
+                    locations={locations}
+                    valueChange={value => setSelectedLocation(value)}
+                    pickerStyle={{ height: 42 }}
+                  />
+                </View>
+
+                <View>
+                  <Text style={[styles.title, { marginTop: 15 }]}>
+                    {constant.checkInOrOut.title.checkoutPurpose}
+                  </Text>
+                  <TextInput
+                    style={styles.textArea}
+                    placeholder={constant.checkInOrOut.purposePlaceholder}
+                    value={description}
+                    onChangeText={setDescription}
+                    multiline
+                  />
+                </View>
+              </View>
+            </>
+          )}
+          {isButtonLoading ? (
+            <ActivityIndicator
+              size="large"
+              color={theme.button.backgroundColor}
+            />
+          ) : (
+            <TouchableOpacity
+              style={styles.gradientButton}
+              onPress={handleClick}
+            >
+              <LinearGradient
+                colors={COLORS.gradients.primary}
+                style={{
+                  borderRadius: 10,
+                  padding: 15,
+                  alignItems: 'center',
+                  width: '100%',
+                }}
+              >
+                <Text style={theme.buttonText}>
+                  {label === constant.assetCheckInOut.checkin.label
+                    ? constant.checkInOrOut.button.checkIn
+                    : constant.checkInOrOut.button.checkOut}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
           )}
         </ScrollView>
-        {renderPickerModal()}
       </KeyboardAvoidingView>
     </ScreenWrapper>
   );
@@ -371,7 +420,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
   },
-  divider: { height: 1, backgroundColor: '#E5E7EB' },
+  divider: { height: 1, backgroundColor: COLORS.border },
   label: { fontSize: 14, color: COLORS.textLight, fontWeight: '600' },
   value: { fontSize: 14, color: COLORS.text, fontWeight: 'bold' },
   sectionTitle: {
@@ -384,18 +433,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: COLORS.background,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.border,
     padding: 12,
   },
   dropdownText: { fontSize: 16, color: COLORS.text },
   textArea: {
-    backgroundColor: '#F9FAFB',
+    backgroundColor: COLORS.background,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.border,
     padding: 12,
     height: 100,
     textAlignVertical: 'top',
@@ -403,14 +452,12 @@ const styles = StyleSheet.create({
   },
   button: { marginTop: SPACING.m },
   gradientButton: {
-    padding: 15,
+    paddingTop: 15,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',
@@ -433,7 +480,7 @@ const styles = StyleSheet.create({
   modalItem: {
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: COLORS.gradients.background[0],
   },
   modalItemText: {
     fontSize: 16,
@@ -448,6 +495,21 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  container: {
+    padding: SPACING.m,
+  },
+  headingContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  title: {
+    fontSize: 14,
+    color: COLORS.textLight,
+    marginBottom: 8,
+    fontWeight: '600',
   },
 });
 

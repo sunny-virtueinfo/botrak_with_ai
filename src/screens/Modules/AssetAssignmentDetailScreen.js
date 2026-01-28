@@ -26,7 +26,6 @@ const AssetAssignmentDetailScreen = ({ route, navigation }) => {
   const [unassignReason, setUnassignReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Determine State
   const isUnassigned =
     !asset.assigned_to && !asset.user_id && asset.status !== 'assigned';
 
@@ -54,7 +53,6 @@ const AssetAssignmentDetailScreen = ({ route, navigation }) => {
       if (response.data && response.data.success) {
         showToast('Asset Unassigned Successfully', 'success');
         setUnassignModalVisible(false);
-        // Navigate Back to Dashboard/Assignment List to refresh
         navigation.navigate('Dashboard', {
           screen: 'AssetAssignment',
           params: { refresh: true },
@@ -294,7 +292,7 @@ const styles = StyleSheet.create({
   },
   modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
   modalBtn: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
-  cancelBtn: { backgroundColor: '#F3F4F6' },
+  cancelBtn: { backgroundColor: COLORS.gradients.background[0] },
   confirmBtn: { backgroundColor: COLORS.error },
   btnTextBlack: { color: COLORS.text, fontWeight: 'bold' },
 });

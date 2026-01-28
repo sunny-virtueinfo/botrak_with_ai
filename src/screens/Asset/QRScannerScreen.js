@@ -25,9 +25,11 @@ import { COLORS, SPACING, SHADOWS } from '../../theme';
 import { useToast } from '../../context/ToastContext';
 import { useApiService } from '../../services/ApiService';
 import GradientButton from '../../components/premium/GradientButton';
+import { useCustomModal } from '../../context/ModalContext';
 
 const QRScannerScreen = ({ navigation, route }) => {
   const { showToast } = useToast();
+  const { showModal } = useCustomModal();
   const api = useApiService();
   const { mode, organizationId, auditId, plantId } = route.params || {};
   console.log('QRScanner audit params:', {
@@ -40,15 +42,10 @@ const QRScannerScreen = ({ navigation, route }) => {
   const { width, height } = useWindowDimensions();
   const isFocused = useIsFocused();
 
-  // Vision Camera v3/v4 hook
   const device = useCameraDevice('back');
-
-  // Removed manual format selection to let the library choose the best compatible format
-  // for Code Scanning to avoid "session/invalid-output-configuration" errors.
 
   const [hasPermission, setHasPermission] = useState(false);
 
-  // Audit specific state
   const [locations, setLocations] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState(
     route.params?.locationId,
@@ -60,7 +57,6 @@ const QRScannerScreen = ({ navigation, route }) => {
     return loc ? loc.name : 'Select Result Location';
   };
 
-  // Verification Modal State
   const [modalVisible, setModalVisible] = useState(false);
   const [scannedAsset, setScannedAsset] = useState(null);
   const [condition, setCondition] = useState('working');
@@ -75,7 +71,6 @@ const QRScannerScreen = ({ navigation, route }) => {
     })();
   }, []);
 
-  // Fetch locations for Audit Mode
   React.useEffect(() => {
     if (mode === 'audit' && organizationId) {
       fetchLocations();
@@ -94,13 +89,11 @@ const QRScannerScreen = ({ navigation, route }) => {
     }
   };
 
-  // Scan Lock & Throttle
   const [isProcessing, setIsProcessing] = useState(false);
   const lastScannedTimeRef = useRef(0);
 
   const onCodeScanned = async code => {
     const now = Date.now();
-    // Throttle: Ignore scans within 1.5 seconds of the last one
     if (now - lastScannedTimeRef.current < 1500) return;
 
     if (modalVisible || locationModalVisible || isProcessing) return;
@@ -112,7 +105,6 @@ const QRScannerScreen = ({ navigation, route }) => {
       let response;
 
       if (mode === 'audit') {
-        // User requested specific API structure for audit
         const params = {
           organization_asset: JSON.stringify({
             qr_code: code,
@@ -122,41 +114,33 @@ const QRScannerScreen = ({ navigation, route }) => {
           from_mobile: true,
         };
 
-        console.log('Audit Scan Params:', params);
         response = await api.searchAssets(organizationId, params);
-        console.log(
-          'Audit Scan Response:',
-          JSON.stringify(response.data, null, 2),
-        );
       } else {
         response = await api.scanAssetSuccessOnly(organizationId, code);
-        console.log(
-          'scanAssetSuccessOnly res:',
-          JSON.stringify(response.data, null, 2),
-        );
       }
 
-      const asset = response.data.audit_log || response.data.organization_asset || response.data.data;
+      const asset =
+        response.data.audit_log ||
+        response.data.organization_asset ||
+        response.data.data;
 
       if (response.data.success && asset) {
         if (mode === 'audit') {
-          // Open Verification Modal directly
           setScannedAsset(asset);
           setCondition('working');
           setUsage('medium');
           setRemark('');
-          // Check for location_mismatch in the main response or audit_log
           const isMismatch =
             response.data.location_mismatch ||
-            (response.data.audit_log && response.data.audit_log.location_mismatch);
+            (response.data.audit_log &&
+              response.data.audit_log.location_mismatch);
           setLocationMismatch(!!isMismatch);
 
           setModalVisible(true);
           setIsProcessing(false);
-          // Note: modalVisible=true will keep camera inactive
         } else {
           handleOtherModes(asset, code);
-          setTimeout(() => setIsProcessing(false), 2000); // Cooldown for other modes
+          setTimeout(() => setIsProcessing(false), 2000);
         }
       } else {
         const errorMsg =
@@ -235,30 +219,25 @@ const QRScannerScreen = ({ navigation, route }) => {
         },
       };
 
-      console.log('submitAuditLog body:', body);
       const res = await api.submitAuditLog(
         organizationId,
         auditId,
         scannedAsset.id,
         body,
       );
-      console.log('submitAuditLog res:', res.data);
 
       setModalVisible(false);
       showToast('Asset Verified Successfully!', 'success');
-      // Ready for next scan
     } catch (e) {
       console.error(e);
-      Alert.alert('Error', 'Failed to save audit entry');
+      showModal('Error', 'Failed to save audit entry');
     }
   };
 
   const codeScanner = useCodeScanner({
     codeTypes: ['qr', 'ean-13'],
     onCodeScanned: codes => {
-      // Basic check for empty or duplicate (though backend handles duplicates, frontend debounce helps)
       if (codes.length > 0 && codes[0].value) {
-        // We pass the value to our throttled function
         onCodeScanned(codes[0].value);
       }
     },
@@ -277,11 +256,9 @@ const QRScannerScreen = ({ navigation, route }) => {
       </View>
     );
 
-  // Constants for Frame
   const scanSize = 250;
   const overlayColor = 'rgba(0,0,0,0.5)';
 
-  // Optimization: Pause camera when processing or modal open to save resources
   const isCameraActive =
     !modalVisible && !locationModalVisible && !isProcessing && isFocused;
 
@@ -298,31 +275,24 @@ const QRScannerScreen = ({ navigation, route }) => {
         enableZoomGesture={false}
       />
 
-      {/* Frame Overlay */}
       <View style={StyleSheet.absoluteFill}>
-        {/* Top Mask */}
         <View style={{ flex: 1, backgroundColor: overlayColor }} />
 
         <View style={{ flexDirection: 'row', height: scanSize }}>
-          {/* Left Mask */}
           <View style={{ flex: 1, backgroundColor: overlayColor }} />
 
-          {/* Center Scan Area (Transparent) */}
           <View
             style={{ width: scanSize, height: scanSize, position: 'relative' }}
           >
-            {/* Corners */}
             <View style={[styles.corner, styles.cornerTL]} />
             <View style={[styles.corner, styles.cornerTR]} />
             <View style={[styles.corner, styles.cornerBL]} />
             <View style={[styles.corner, styles.cornerBR]} />
           </View>
 
-          {/* Right Mask */}
           <View style={{ flex: 1, backgroundColor: overlayColor }} />
         </View>
 
-        {/* Bottom Mask */}
         <View style={{ flex: 1, backgroundColor: overlayColor }} />
       </View>
 
@@ -336,7 +306,6 @@ const QRScannerScreen = ({ navigation, route }) => {
       <View style={styles.overlay}>
         <View style={{ flex: 1 }} />
 
-        {/* Helper Text */}
         <Text style={styles.scanText}>Align QR code within the frame</Text>
 
         {mode === 'audit' && (
@@ -430,9 +399,10 @@ const QRScannerScreen = ({ navigation, route }) => {
         >
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Verify Asset</Text>
-            {scannedAsset?.name && (
+            {scannedAsset?.organizationasset && (
               <Text style={styles.assetName}>
-                {scannedAsset?.name || scannedAsset?.asset_code}
+                {scannedAsset?.organizationasset?.asset_code ||
+                  scannedAsset?.asset_code}
               </Text>
             )}
 

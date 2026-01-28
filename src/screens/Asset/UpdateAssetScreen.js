@@ -20,9 +20,12 @@ import { useApiService } from '../../services/ApiService';
 import GradientButton from '../../components/premium/GradientButton';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import { useToast } from '../../context/ToastContext';
+import { useCustomModal } from '../../context/ModalContext';
 import { format } from 'date-fns';
 import Loader from '../../components/common/Loader';
-import GenericDropdown from '../../components/common/GenericDropdown';
+import NewPickerForPlant from '../../components/common/NewPickerForPlant';
+import NewLocationPicker from '../../components/common/NewLocationPicker';
+import CustomDropDown from '../../components/common/CustomDropDown';
 
 const CONSTANT_USAGE = [
   { name: 'Medium', value: 'medium' },
@@ -40,9 +43,9 @@ const CONSTANT_CONDITION = [
 
 const UpdateAssetScreen = ({ route, navigation }) => {
   const { asset: initialAsset, organizationId } = route.params;
-  console.log('initialAsset', initialAsset);
   const api = useApiService();
   const { showToast } = useToast();
+  const { showModal } = useCustomModal();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -69,7 +72,6 @@ const UpdateAssetScreen = ({ route, navigation }) => {
   const [selectedLocation, setSelectedLocation] = useState('');
   const [selectedAssetRegister, setSelectedAssetRegister] = useState('');
 
-  // Images (Mocked/Partial)
   // Images (Mocked/Partial)
   const [existingImages, setExistingImages] = useState([]);
   const [deletedImageIds, setDeletedImageIds] = useState([]);
@@ -107,26 +109,45 @@ const UpdateAssetScreen = ({ route, navigation }) => {
       const result = await launchCamera({
         title: 'Select Asset',
         quality: 0.6,
+        mediaType: 'photo',
+        saveToPhotos: false,
       });
+
       if (result.didCancel) {
         return;
       }
-      const newImages = [...newImages, result.assets[0]];
-      console.log('addImage 1', newImages);
-      setNewImages(newImages);
+
+      if (result.errorCode) {
+        showToast(result.errorMessage || 'Camera error', 'error');
+        return;
+      }
+
+      if (result.assets && result.assets.length > 0) {
+        const capturedImage = result.assets[0];
+        if (capturedImage && capturedImage.uri) {
+          const imageWithId = {
+            ...capturedImage,
+            tempId: Date.now().toString(),
+          };
+          const updatedImages = [...newImages, imageWithId];
+          setNewImages(updatedImages);
+        } else {
+          showToast('Failed to capture image', 'error');
+        }
+      } else {
+        console.log('No assets found in camera result');
+      }
     } catch (error) {
-      console.log('error', error);
+      console.log('Camera catch error', error);
+      showToast('An error occurred opening the camera', 'error');
     }
   };
-  // Alias for compatibility/ease of use in button
   const handleSelectImage = checkPermissionForEditImage;
 
-
-  const handleRemoveNewImage = index => {
-    setNewImages(prev => prev.filter((_, i) => i !== index));
+  const handleRemoveNewImage = tempId => {
+    setNewImages(prev => prev.filter(img => img.tempId !== tempId));
   };
 
-  // Errors
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -136,7 +157,6 @@ const UpdateAssetScreen = ({ route, navigation }) => {
   const loadInitialData = async () => {
     setIsLoading(true);
     try {
-      // 1. Determine Plant ID logic (from snippet)
       let currentPlantId =
         initialAsset.plant_id ||
         initialAsset.current_plant_id ||
@@ -144,34 +164,29 @@ const UpdateAssetScreen = ({ route, navigation }) => {
         initialAsset.location?.plant_id ||
         '';
 
-      // 2. Load Plants
       const plantsRes = await api.getPlants(organizationId);
       const loadedPlants = plantsRes.data?.plants || [];
       setPlants(loadedPlants);
-
-      // 3. Set Initial State from passed asset
       setAssetCode(initialAsset.asset_code || '');
       setAssetType(initialAsset.asset_type || '');
       setDescription(
         initialAsset.asset_description || initialAsset.description || '',
       );
       setSupplierName(initialAsset.supplier_name || '');
-      setCondition(initialAsset.condition || 'working'); // Default to value
-      setUsage(initialAsset.usage || 'medium'); // Default to value
+      setCondition(initialAsset.condition || 'working');
+      setUsage(initialAsset.usage || 'medium');
       setSubLocation(initialAsset.sub_location || '');
       setLifeOfAsset(
         initialAsset.life_of_asset ? String(initialAsset.life_of_asset) : '0',
       );
       setExistingImages(initialAsset.pictures || []);
 
-      // Parse Date
       if (initialAsset.installation_date) {
         setInstallationDate(
           format(new Date(initialAsset.installation_date), 'yyyy-MM-dd'),
         );
       }
 
-      // 4. Cascade Load if we have a plant
       if (currentPlantId && loadedPlants.some(p => p.id === currentPlantId)) {
         setSelectedPlant(currentPlantId);
         await fetchDependenciesForPlant(
@@ -196,7 +211,6 @@ const UpdateAssetScreen = ({ route, navigation }) => {
     initialRegisterId = null,
   ) => {
     try {
-      // Fetch Locations and Registers concurrently
       const [locRes, regRes] = await Promise.all([
         api.getLocations(organizationId, plantId),
         api.getAssetRegisters(organizationId, { selected_plant: plantId }),
@@ -208,7 +222,6 @@ const UpdateAssetScreen = ({ route, navigation }) => {
       setLocations(loadedLocations);
       setAssetRegisters(loadedRegisters);
 
-      // Restore selections if consistent check
       if (
         initialLocationId &&
         loadedLocations.some(l => l.id === initialLocationId)
@@ -231,9 +244,9 @@ const UpdateAssetScreen = ({ route, navigation }) => {
     }
   };
 
-  const handlePlantChange = plantId => {
+  const handlePlantChange = plant => {
+    const plantId = plant?.id || plant;
     setSelectedPlant(plantId);
-    // Reset dependents
     setSelectedLocation('');
     setSelectedAssetRegister('');
     setLocations([]);
@@ -281,32 +294,26 @@ const UpdateAssetScreen = ({ route, navigation }) => {
         'organization_asset[asset_register_id]',
         selectedAssetRegister,
       );
-      formdata.append('organization_asset[life_of_asset]', Number(lifeOfAsset));
+      formdata.append('organization_asset[life_of_asset]', String(lifeOfAsset));
       formdata.append('organization_asset[sub_location]', subLocation);
 
-      //   formdata.append('organization_asset[id]', initialAsset.id);
-      formdata.append('id', initialAsset.id);
+      formdata.append('id', String(initialAsset.id));
 
-      // Deletions
       deletedImageIds.forEach(id => {
-        formdata.append('organization_asset[deleted_pictures][]', id);
+        formdata.append('organization_asset[deleted_pictures][]', String(id));
       });
 
-      // New Images
       newImages.forEach(img => {
-        formdata.append('organization_asset[pictures][]', {
-          uri: img.uri,
-          name: img.name,
-          type: img.type,
-        });
+        if (img && img.uri) {
+          formdata.append('organization_asset[pictures][]', {
+            uri: img.uri,
+            name: img.name || 'image.jpg',
+            type: img.type || 'image/jpeg',
+          });
+        }
       });
 
-      const params = {
-        id: initialAsset.id,
-      };
-      console.log('formdata', formdata);
-      const response = await api.updateAsset(organizationId, formdata, params);
-      console.log('response', response.data);
+      const response = await api.updateAsset(organizationId, formdata, {});
       if (response.data && response.data.success) {
         showToast('Asset updated successfully', 'success');
         navigation.navigate('Dashboard', {
@@ -325,41 +332,36 @@ const UpdateAssetScreen = ({ route, navigation }) => {
   };
 
   const handleDelete = async () => {
-    Alert.alert(
-      'Confirm Delete',
-      'Are you sure you want to delete this asset?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            setIsDeleting(true);
-            try {
-              const data = {
-                organization_asset: {
-                  id: initialAsset.id,
-                },
-              };
-              const res = await api.deleteAsset(organizationId, data);
-              if (res?.data?.success) {
-                showToast('Asset deleted', 'success');
-                navigation.popToTop();
-              } else {
-                showToast('Delete failed', 'error');
-              }
-            } catch (e) {
-              showToast('Error deleting asset', 'error');
-            } finally {
-              setIsDeleting(false);
+    showModal('Confirm Delete', 'Are you sure you want to delete this asset?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          setIsDeleting(true);
+          try {
+            const data = {
+              organization_asset: {
+                id: initialAsset.id,
+              },
+            };
+            const res = await api.deleteAsset(organizationId, data);
+            if (res?.data?.success) {
+              showToast('Asset deleted', 'success');
+              navigation.popToTop();
+            } else {
+              showToast('Delete failed', 'error');
             }
-          },
+          } catch (e) {
+            showToast('Error deleting asset', 'error');
+          } finally {
+            setIsDeleting(false);
+          }
         },
-      ],
-    );
+      },
+    ]);
   };
 
-  // Image actions (Placeholder)
   const handleRemoveExistingImage = id => {
     setDeletedImageIds([...deletedImageIds, id]);
     setExistingImages(existingImages.filter(img => img.image_id !== id));
@@ -458,13 +460,12 @@ const UpdateAssetScreen = ({ route, navigation }) => {
           <Text style={styles.label}>Plant</Text>
           <Text style={styles.star}> *</Text>
         </View>
-        <GenericDropdown
-          label="Select Plant"
-          data={plants}
-          value={selectedPlant}
-          onValueChange={handlePlantChange}
-          placeholder="Select Plant"
+        <NewPickerForPlant
+          plants={plants}
+          selected={selectedPlant}
+          valueChange={handlePlantChange}
           error={errors.plant}
+          pickerStyle={styles.dropdownBtn}
         />
       </View>
 
@@ -473,13 +474,14 @@ const UpdateAssetScreen = ({ route, navigation }) => {
           <Text style={styles.label}>Asset Register</Text>
           <Text style={styles.star}> *</Text>
         </View>
-        <GenericDropdown
+        <CustomDropDown
           label="Select Register"
           data={assetRegisters}
           value={selectedAssetRegister}
-          onValueChange={setSelectedAssetRegister}
+          onValueChange={val => setSelectedAssetRegister(val?.id ?? val)}
           placeholder="Select Asset Register"
           error={errors.register}
+          style={styles.dropdownBtn}
         />
       </View>
 
@@ -488,13 +490,12 @@ const UpdateAssetScreen = ({ route, navigation }) => {
           <Text style={styles.label}>Location</Text>
           <Text style={styles.star}> *</Text>
         </View>
-        <GenericDropdown
-          label="Select Location"
-          data={locations}
-          value={selectedLocation}
-          onValueChange={setSelectedLocation}
-          placeholder="Select Location"
+        <NewLocationPicker
+          locations={locations}
+          selected={selectedLocation}
+          valueChange={val => setSelectedLocation(val?.id || val)}
           error={errors.location}
+          pickerStyle={styles.dropdownBtn}
         />
       </View>
 
@@ -513,20 +514,22 @@ const UpdateAssetScreen = ({ route, navigation }) => {
         <View style={styles.row}>
           <View style={{ flex: 1, marginRight: 10 }}>
             <Text style={styles.label}>Condition</Text>
-            <GenericDropdown
+            <CustomDropDown
               label="Condition"
               data={CONSTANT_CONDITION}
               value={condition}
-              onValueChange={setCondition}
+              onValueChange={val => setCondition(val?.value ?? val)}
+              style={styles.dropdownBtn}
             />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.label}>Usage</Text>
-            <GenericDropdown
+            <CustomDropDown
               label="Usage"
               data={CONSTANT_USAGE}
               value={usage}
-              onValueChange={setUsage}
+              onValueChange={val => setUsage(val?.value ?? val)}
+              style={styles.dropdownBtn}
             />
           </View>
         </View>
@@ -544,7 +547,7 @@ const UpdateAssetScreen = ({ route, navigation }) => {
       {existingImages.map(img => (
         <View key={img.image_id} style={styles.imageRow}>
           <Image
-            source={{ uri: img.picture_url || img.uri }} // Fallback to uri if needed
+            source={{ uri: img.image_url || img.uri }}
             style={styles.thumbnail}
             resizeMode="cover"
           />
@@ -562,26 +565,29 @@ const UpdateAssetScreen = ({ route, navigation }) => {
         </View>
       ))}
 
-      {newImages.map((img, index) => (
-        <View key={`new-${index}`} style={styles.imageRow}>
-          <Image
-            source={{ uri: img.uri }}
-            style={styles.thumbnail}
-            resizeMode="cover"
-          />
-          <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={{ color: COLORS.text, fontSize: 12 }}>
-              New Image {index + 1}
-            </Text>
+      {newImages.map((img, index) => {
+        if (!img || !img.uri) return null;
+        return (
+          <View key={img.tempId || `new-${index}`} style={styles.imageRow}>
+            <Image
+              source={{ uri: img.uri }}
+              style={styles.thumbnail}
+              resizeMode="cover"
+            />
+            <View style={{ flex: 1, marginLeft: 10 }}>
+              <Text style={{ color: COLORS.text, fontSize: 12 }}>
+                New Image {index + 1}
+              </Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => handleRemoveNewImage(img.tempId)}
+              style={styles.removeBtn}
+            >
+              <Text style={styles.removeText}>Remove</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            onPress={() => handleRemoveNewImage(index)}
-            style={styles.removeBtn}
-          >
-            <Text style={styles.removeText}>Remove</Text>
-          </TouchableOpacity>
-        </View>
-      ))}
+        );
+      })}
 
       <View style={styles.btnRow}>
         <GradientButton
@@ -621,6 +627,16 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     color: COLORS.text,
     fontSize: 14,
+  },
+  dropdownBtn: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   inputError: { borderColor: COLORS.error },
   row: { flexDirection: 'row' },

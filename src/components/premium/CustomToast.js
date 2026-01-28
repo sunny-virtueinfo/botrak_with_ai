@@ -22,12 +22,7 @@ const CustomToast = ({ message, type = 'info', visible, onHide }) => {
   }, [visible]);
 
   const handleHide = () => {
-    // Only invoke onHide if we are currently handling the hide process
-    // Let the parent control the 'visible' prop to false
     if (onHide) onHide();
-
-    // We delay unmounting slightly to allow for an exit animation if we were to implement one
-    // But since Animatable handles entrances well, we'll keep it simple for now
     const timer = setTimeout(() => {
       setShow(false);
     }, 500);

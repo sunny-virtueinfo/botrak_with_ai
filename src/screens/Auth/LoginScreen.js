@@ -39,19 +39,14 @@ const LoginScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      // 1. ApiService Call
       const response = await api.login(email, password);
       if (response.data.success) {
         const { user } = response.data;
         const token = user.authentication_token;
 
-        // 2. Set Token manually
         client.defaults.headers.token = token;
 
-        // 3. Fetch Organizations and Auto-Select First
         try {
-          // Use client directly to pass the new token specifically,
-          // because api.getMyOrganizations uses the old (null) user from context
           const orgResponse = await client.get(API_ENDPOINTS.MY_ORGANIZATIONS, {
             headers: { token: token },
           });
@@ -63,24 +58,20 @@ const LoginScreen = ({ navigation }) => {
           ) {
             const orgs = orgResponse.data.my_organizations;
 
-            // Auto Select Logic: Find first org with active plan
             let targetOrg = orgs.find(
               o => o.is_plan_active === true || o.is_plan_active === 1,
             );
-
-            // Fallback to first one
             if (!targetOrg) {
               targetOrg = orgs[0];
             }
 
             const firstOrg = {
-              organization_id: targetOrg.organization_id, // Ensure correct ID key
+              organization_id: targetOrg.organization_id,
               name: targetOrg.organization_name,
               role: targetOrg.role,
               is_plan_active: targetOrg.is_plan_active,
             };
 
-            // Save active org to storage
             await require('@react-native-async-storage/async-storage').default.setItem(
               'active_org',
               JSON.stringify(firstOrg),
@@ -90,10 +81,8 @@ const LoginScreen = ({ navigation }) => {
           console.log('Org Fetch Warning', orgError);
         }
 
-        // 4. Set Token in Context
         await login(user, token);
       } else {
-        console.log('response.data', response.data);
         showToast(response.data.error || 'Invalid credentials', 'error');
       }
     } catch (error) {
@@ -113,13 +102,11 @@ const LoginScreen = ({ navigation }) => {
         barStyle="light-content"
       />
 
-      {/* Background Graphic */}
       <LinearGradient
-        colors={['#0F172A', '#1E293B', '#334155']} // Dark slate premium background
+        colors={['#0F172A', '#1E293B', '#334155']}
         style={StyleSheet.absoluteFillObject}
       />
 
-      {/* Abstract Shapes for Depth */}
       <View
         style={[
           styles.circle,

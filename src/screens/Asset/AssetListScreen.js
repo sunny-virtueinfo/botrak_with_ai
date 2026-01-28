@@ -8,12 +8,14 @@ import {
   TouchableOpacity,
   Modal,
 } from 'react-native';
-import { COLORS, SPACING, SHADOWS } from '../../theme';
+import { COLORS, SPACING, SHADOWS, FONTS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
 import { useToast } from '../../context/ToastContext';
 import Feather from 'react-native-vector-icons/Feather';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
+
 import Loader from '../../components/common/Loader';
+import NewPickerForPlant from '../../components/common/NewPickerForPlant';
 
 const CONSTANT_USAGE = [
   { name: 'Medium', value: 'medium' },
@@ -32,8 +34,6 @@ const AssetListScreen = ({ route, navigation }) => {
   const [plants, setPlants] = useState([]);
   const [selectedPlant, setSelectedPlant] = useState(null);
   const [selectedLocation, setSelectedLocation] = useState(null);
-  const [pickerVisible, setPickerVisible] = useState(false);
-  const [pickerType, setPickerType] = useState(null); // 'plant' or 'location'
 
   const { showToast } = useToast();
   const api = useApiService();
@@ -64,7 +64,6 @@ const AssetListScreen = ({ route, navigation }) => {
         const plantList = res.data.plants || [];
         setPlants(plantList);
 
-        // Priority 1: Route Params (passed from PlantSelectionScreen)
         if (route.params?.plantId) {
           const paramPlant = plantList.find(p => p.id === route.params.plantId);
           if (paramPlant) {
@@ -73,7 +72,6 @@ const AssetListScreen = ({ route, navigation }) => {
           }
         }
 
-        // Default: If no param, load assets normally (or wait for user to pick from internal dropdown)
         loadAssets('', null, null, 1);
       }
     } catch (e) {
@@ -82,13 +80,10 @@ const AssetListScreen = ({ route, navigation }) => {
     }
   };
 
-  const handlePlantSelect = (plant, closePicker = true) => {
+  const handlePlantSelect = plant => {
     setSelectedPlant(plant);
     setSearch('');
-    // Reset to page 1
     loadAssets('', plant.id, null, 1);
-
-    if (closePicker) setPickerVisible(false);
   };
 
   const loadAssets = async (
@@ -120,7 +115,6 @@ const AssetListScreen = ({ route, navigation }) => {
           params.audit_id = route.params.auditId;
         }
         const response = await api.getManualAudit(organizationId, params);
-        console.log('Manual Audit Response 1', response.data);
         if (response.data && response.data.success) {
           newData = response.data.data || response.data.organization_asset;
           if (!Array.isArray(newData)) newData = newData ? [newData] : [];
@@ -129,29 +123,24 @@ const AssetListScreen = ({ route, navigation }) => {
         const { label } = route.params.redirectDetails;
 
         if (label === 'Check-in') {
-          params.organization_asset.checkin_checkout = 'Checkin';
+          params.organization_asset.checkin_checkout = 'checkin';
         } else if (label === 'Check-out') {
-          params.organization_asset.checkin_checkout = 'Checkout';
+          params.organization_asset.checkin_checkout = 'checkout';
         }
 
         if (searchText) {
-          params.q = JSON.stringify({ search_cont: searchText });
+          params.q = { search_cont: searchText };
         } else {
           delete params.q;
         }
-
         const response = await api.getManualAudit(organizationId, params);
-        console.log('Manual Audit Response 2', response.data);
         if (response.data && response.data.success) {
           newData = response.data.data || response.data.organization_asset;
           if (!Array.isArray(newData)) newData = newData ? [newData] : [];
         }
       } else {
         if (plantId) {
-          console.log('organizationId', organizationId);
-          console.log('params', params);
           const response = await api.getManualAudit(organizationId, params);
-          console.log('Manual Audit Response 3', response.data);
           if (response.data && response.data.success) {
             newData = response.data.data || response.data.organization_asset;
             if (!Array.isArray(newData)) newData = newData ? [newData] : [];
@@ -189,7 +178,6 @@ const AssetListScreen = ({ route, navigation }) => {
 
   const handleSearch = text => {
     setSearch(text);
-    // Debounce can be added here, currently direct call
     loadAssets(text, selectedPlant?.id, selectedLocation?.id, 1);
   };
 
@@ -210,11 +198,11 @@ const AssetListScreen = ({ route, navigation }) => {
       const { redirectTo, label } = route.params.redirectDetails;
       const currentStatus = (item.checkin_checkout || '').toLowerCase();
 
-      if (label === 'Check-in' && currentStatus !== 'checkin') {
+      if (label === 'Check-in' && currentStatus !== 'checkout') {
         showToast('Asset is already checked in.', 'error');
         return;
       }
-      if (label === 'Check-out' && currentStatus !== 'checkout') {
+      if (label === 'Check-out' && currentStatus !== 'checkin') {
         showToast('Asset is already checked out.', 'error');
         return;
       }
@@ -255,41 +243,6 @@ const AssetListScreen = ({ route, navigation }) => {
     </TouchableOpacity>
   );
 
-  const renderPickerModal = () => (
-    <Modal
-      visible={pickerVisible}
-      transparent={true}
-      animationType="slide"
-      onRequestClose={() => setPickerVisible(false)}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalTitle}>
-            Select {pickerType === 'plant' ? 'Plant' : 'Location'}
-          </Text>
-          <FlatList
-            data={pickerType === 'plant' ? plants : []}
-            keyExtractor={item => item.id.toString()}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.modalItem}
-                onPress={() => handlePlantSelect(item)}
-              >
-                <Text style={styles.modalItemText}>{item.name}</Text>
-              </TouchableOpacity>
-            )}
-          />
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={() => setPickerVisible(false)}
-          >
-            <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-
   return (
     <ScreenWrapper
       title={route.params?.title || orgName || 'Assets'}
@@ -298,18 +251,14 @@ const AssetListScreen = ({ route, navigation }) => {
       scrollable={false}
     >
       <View style={styles.filterContainer}>
-        <TouchableOpacity
-          style={styles.dropdown}
-          onPress={() => {
-            setPickerVisible(true);
-            setPickerType('plant');
-          }}
-        >
-          <Text style={styles.dropdownText} numberOfLines={1}>
-            {selectedPlant ? selectedPlant.name : 'Select Plant'}
-          </Text>
-          <Feather name="chevron-down" size={16} color={COLORS.textLight} />
-        </TouchableOpacity>
+        <View style={{ flex: 1 }}>
+          <NewPickerForPlant
+            plants={plants}
+            selected={selectedPlant}
+            valueChange={handlePlantSelect}
+            pickerStyle={styles.dropdownBtn}
+          />
+        </View>
       </View>
 
       <View style={styles.searchContainer}>
@@ -342,8 +291,6 @@ const AssetListScreen = ({ route, navigation }) => {
           }
         />
       )}
-
-      {renderPickerModal()}
     </ScreenWrapper>
   );
 };
@@ -356,21 +303,16 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
     gap: 10,
   },
-  dropdown: {
-    flex: 1,
-    backgroundColor: COLORS.surface,
-    padding: 10,
+  dropdownBtn: {
+    backgroundColor: 'white',
     borderRadius: 8,
+    paddingVertical: 10,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: COLORS.border,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  dropdownText: {
-    fontSize: 14,
-    color: COLORS.text,
-    flex: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
   },
   searchContainer: {
     padding: SPACING.m,
@@ -409,60 +351,23 @@ const styles = StyleSheet.create({
   assetCode: {
     fontSize: 12,
     color: COLORS.textLight,
+    fontStyle: FONTS.italic,
   },
   emptyText: {
     textAlign: 'center',
     marginTop: 20,
     color: COLORS.textLight,
+    fontStyle: FONTS.italic,
   },
   badgeContainer: {
     marginTop: 5,
     alignSelf: 'flex-start',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: COLORS.gradients.background[0],
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 4,
   },
   badgeText: { fontSize: 10, color: COLORS.textLight },
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: SPACING.l,
-    maxHeight: '50%',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: SPACING.m,
-    textAlign: 'center',
-    color: COLORS.text,
-  },
-  modalItem: {
-    paddingVertical: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
-  },
-  modalItemText: {
-    fontSize: 16,
-    color: COLORS.text,
-  },
-  closeButton: {
-    marginTop: SPACING.m,
-    alignSelf: 'center',
-    padding: 10,
-  },
-  closeButtonText: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
 });
 
 export default AssetListScreen;

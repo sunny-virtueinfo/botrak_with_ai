@@ -28,11 +28,10 @@ const AuditListScreen = ({ navigation, route }) => {
 
   const api = useApiService();
 
-  // Pagination State
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const PAGE_SIZE = 10; // Assuming 10 for audits, adjusting based on response
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
     loadAudits(1);
@@ -61,7 +60,6 @@ const AuditListScreen = ({ navigation, route }) => {
           setAudits(prev => [...prev, ...newData]);
         }
 
-        // If data returned is less than PAGE_SIZE, we've reached the end
         if (newData.length < PAGE_SIZE) {
           setHasMore(false);
         } else {
@@ -251,7 +249,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     color: COLORS.textLight,
-    fontStyle: 'italic',
+    fontStyle: FONTS.italic,
   },
   membersRow: { marginTop: 8, marginBottom: 8 },
   memberChips: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4, gap: 6 },

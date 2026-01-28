@@ -13,11 +13,13 @@ import GradientButton from '../../components/premium/GradientButton';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
 import { useToast } from '../../context/ToastContext';
+import { useCustomModal } from '../../context/ModalContext';
 
 const AddNewAssetScreen = ({ route, navigation }) => {
   const { auditId, locationId, organizationId, plantId } = route.params;
   const api = useApiService();
   const { showToast } = useToast();
+  const { showModal } = useCustomModal();
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -34,7 +36,6 @@ const AddNewAssetScreen = ({ route, navigation }) => {
     try {
       setLoading(true);
 
-      // Use getCategoriesByPlant as per user curl instructions
       const params = {
         organization_asset: JSON.stringify({
           audit_id: auditId,
@@ -56,7 +57,7 @@ const AddNewAssetScreen = ({ route, navigation }) => {
       }
     } catch (e) {
       console.error(e);
-      Alert.alert('Error', 'Failed to load asset types');
+      showModal('Error', 'Failed to load asset types');
     } finally {
       setLoading(false);
     }
@@ -70,7 +71,7 @@ const AddNewAssetScreen = ({ route, navigation }) => {
 
   const handleSubmit = async () => {
     if (!name || !assetType) {
-      Alert.alert('Validation', 'Name and Asset Type are required.');
+      showModal('Validation', 'Name and Asset Type are required.');
       return;
     }
 
@@ -86,15 +87,11 @@ const AddNewAssetScreen = ({ route, navigation }) => {
         from_mobile: true,
       };
 
-      console.log('DEBUG: AddNewAsset payload:', body);
-
       const response = await api.addNewAuditAssets(
         organizationId,
         auditId,
         body,
       );
-
-      console.log('DEBUG: AddNewAsset response:', response);
 
       if (response.data.success) {
         showToast('Asset added successfully', 'success');

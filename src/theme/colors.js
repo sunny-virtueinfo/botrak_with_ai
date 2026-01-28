@@ -1,32 +1,32 @@
 export const COLORS = {
-  primary: '#4F46E5', // Indigo 600
-  primaryDark: '#4338CA', // Indigo 700
-  secondary: '#10B981', // Emerald 500
-  background: '#F9FAFB', // Gray 50
+  primary: '#4F46E5',
+  primaryDark: '#4338CA',
+  secondary: '#10B981',
+  background: '#F9FAFB',
   surface: '#FFFFFF',
-  text: '#1F2937', // Gray 800
-  textLight: '#6B7280', // Gray 500
-  error: '#EF4444', // Red 500
-  border: '#E5E7EB', // Gray 200
+  text: '#1F2937',
+  textLight: '#6B7280',
+  error: '#EF4444',
+  border: '#E5E7EB',
   gradients: {
     primary: ['#4F46E5', '#4338CA'],
     success: ['#10B981', '#059669'],
     surface: ['#FFFFFF', '#F9FAFB'],
-    background: ['#F3F4F6', '#E5E7EB'], // Gray 100 to Gray 200
-    info: ['#3B82F6', '#2563EB'], // Blue 500 to Blue 600
+    background: ['#F3F4F6', '#E5E7EB'],
+    info: ['#3B82F6', '#2563EB'],
   },
   status: {
-    active: '#10B981', // Emerald 500
-    inactive: '#6B7280', // Gray 500
+    active: '#10B981',
+    inactive: '#6B7280',
   },
   checked: {
-    true: '#10B981', // Emerald 500
-    false: '#6B7280', // Gray 500
+    true: '#10B981',
+    false: '#6B7280',
   },
-  success: '#10B981', // Emerald 500
-  successLight: '#D1FAE5', // Emerald 100
-  warning: '#F59E0B', // Amber 500
-  warningLight: '#FEF3C7', // Amber 100
-  info: '#3B82F6', // Blue 500
-  infoLight: '#DBEAFE', // Blue 100
+  success: '#10B981',
+  successLight: '#D1FAE5',
+  warning: '#F59E0B',
+  warningLight: '#FEF3C7',
+  info: '#3B82F6',
+  infoLight: '#DBEAFE',
 };

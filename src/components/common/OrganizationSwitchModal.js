@@ -33,7 +33,6 @@ const OrganizationSwitchModal = ({ visible, onClose, onSelect }) => {
     try {
       const response = await api.getMyOrganizations();
       if (response.data.my_organizations) {
-        console.log('Organizations:', response.data.my_organizations);
         const orgs = response.data.my_organizations;
         setOrganizations(orgs);
 
@@ -187,6 +186,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: COLORS.text,
     fontFamily: FONTS.bold,
+    fontStyle: FONTS.italic,
   },
   list: {
     paddingBottom: 10,

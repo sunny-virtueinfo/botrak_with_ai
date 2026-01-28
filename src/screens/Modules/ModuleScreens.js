@@ -4,10 +4,6 @@ import CheckInOutScreenComponent from './CheckInOutScreen';
 import AuditListScreenComponent from '../Audit/AuditListScreen';
 import PremiumPlaceholder from '../../components/common/PremiumPlaceholder';
 
-const ModuleScreen = ({ route }) => {
-  return <PremiumPlaceholder title={route.name} />;
-};
-
 import RemindersScreenComponent from './RemindersScreen';
 import ApprovalsScreenComponent from './ApprovalsScreen';
 import InvoicesScreenComponent from './InvoicesScreen';

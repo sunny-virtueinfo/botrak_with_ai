@@ -25,6 +25,7 @@ const ApprovalsScreen = ({ route, navigation }) => {
   const [selectedId, setSelectedId] = useState(null);
   const [rejectReason, setRejectReason] = useState('');
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const api = useApiService();
   const { showToast } = useToast();
@@ -77,26 +78,32 @@ const ApprovalsScreen = ({ route, navigation }) => {
   const handleApproveConfirm = async () => {
     if (!selectedId) return;
     try {
+      setActionLoading(true);
       await api.approveRequest(organizationId, selectedId);
       setApproveModalVisible(false);
-      showToast('Request approved successfully');
+      showToast('Request approved successfully', 'success');
       loadRequests();
     } catch (e) {
       console.error(e);
+    } finally {
+      setActionLoading(false);
     }
   };
 
   const handleRejectConfirm = async () => {
     if (!selectedId) return;
     try {
+      setActionLoading(true);
       await api.rejectRequest(organizationId, selectedId, {
         reason: rejectReason,
       });
       setRejectModalVisible(false);
-      showToast('Request rejected successfully');
+      showToast('Request rejected successfully', 'success');
       loadRequests();
     } catch (e) {
       console.error(e);
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -128,7 +135,18 @@ const ApprovalsScreen = ({ route, navigation }) => {
             color={COLORS.textLight}
             style={{ marginRight: 4 }}
           />
-          <Text style={styles.date}>{item.request_date}</Text>
+          <Text style={styles.date}>
+            {item.request_date
+              ? new Date(item.request_date).toLocaleString('en-IN', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: true,
+                })
+              : ''}
+          </Text>
         </View>
       </View>
 
@@ -175,9 +193,15 @@ const ApprovalsScreen = ({ route, navigation }) => {
     <ScreenWrapper title="Approvals" showMenu={true} scrollable={false}>
       {loading && (
         <View style={styles.loaderContainer}>
-          <Loader visible={true} size="small" />
+          <Loader visible={true} size="small" overlay={false} />
         </View>
       )}
+      <Loader
+        visible={actionLoading}
+        size="small"
+        overlay={true}
+        message="Processing..."
+      />
       {!loading && (
         <FlatList
           data={requests}
@@ -267,7 +291,7 @@ const styles = StyleSheet.create({
   list: { padding: SPACING.m, paddingBottom: 100 },
   card: {
     marginBottom: SPACING.m,
-    padding: 0, // GlassCard handles internal padding, but we might want custom content padding
+    padding: 0,
     paddingVertical: SPACING.m,
     paddingHorizontal: SPACING.m,
   },
@@ -303,7 +327,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  // Details with Icons
   detailRow: {
     flexDirection: 'row',
     marginBottom: 12,
@@ -313,7 +336,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)', // Light primary
+    backgroundColor: 'rgba(99, 102, 241, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -337,10 +360,9 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
 
-  // Action Buttons
   actionRow: {
     flexDirection: 'row',
-    marginTop: 8, // reduced margin as rows have space
+    marginTop: 8,
     paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0,0,0,0.05)',
@@ -386,7 +408,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  // Modal Styles
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.5)',

@@ -36,17 +36,13 @@ const AuditAssetListScreen = ({ route, navigation }) => {
   const { showToast } = useToast();
   const api = useApiService();
 
-  // Form State
   const [condition, setCondition] = useState('working');
   const [usage, setUsage] = useState('medium');
   const [remark, setRemark] = useState('');
 
-  // Initial Load
   useEffect(() => {
     loadAssets(1, '', true);
   }, [categoryId]);
-
-  // Handle Scanned Asset from QR
   useEffect(() => {
     if (route.params?.scannedAsset) {
       const scanned = route.params.scannedAsset;
@@ -61,18 +57,13 @@ const AuditAssetListScreen = ({ route, navigation }) => {
       if (pageNum === 1) setLoading(true);
       else setIsLoadMore(true);
 
-      // Determine filter parameters
-      // User requested exact match with cURL: organization_asset={"plant_id":"..."}
       const filterParams = {
         plant_id: plantId,
-        // location_id: locationId, // REMOVED to match user cURL for "All Assets"
       };
-      // If specific category is selected, add it to filter
       if (categoryId) {
         filterParams.asset_type = categoryId;
       }
 
-      // Construct API params
       const params = {
         organization_asset: JSON.stringify(filterParams),
         audit_id: auditId,
@@ -80,15 +71,10 @@ const AuditAssetListScreen = ({ route, navigation }) => {
         from_mobile: true,
       };
 
-      // Add Search Param
       if (search) {
         params.q = JSON.stringify({ search_cont: search });
       }
-
-      // Use filterAssetsByType for BOTH cases
       const response = await api.filterAssetsByType(organizationId, params);
-      console.log('DEBUG: filterAssetsByType response:', response);
-      // Flexible response handling
       let newAssets = [];
       const responseData = response.data;
 
@@ -100,10 +86,8 @@ const AuditAssetListScreen = ({ route, navigation }) => {
         } else if (Array.isArray(responseData.data)) {
           newAssets = responseData.data;
         } else if (responseData.id) {
-          // It's a single asset object effectively
           newAssets = [responseData];
         } else if (responseData.success === true && responseData.data) {
-          // Handle case where success is true but data might be object?
           newAssets = Array.isArray(responseData.data)
             ? responseData.data
             : [responseData.data];
@@ -111,7 +95,6 @@ const AuditAssetListScreen = ({ route, navigation }) => {
       }
 
       if (newAssets.length > 0 || responseData.success) {
-        // Accept if we found assets OR success is true (even if empty list)
         if (reset) {
           setAssets(newAssets);
         } else {
@@ -124,7 +107,6 @@ const AuditAssetListScreen = ({ route, navigation }) => {
           });
         }
 
-        // Pagination Check
         if (newAssets.length === 0) {
           setHasMore(false);
         } else {
@@ -154,7 +136,6 @@ const AuditAssetListScreen = ({ route, navigation }) => {
   const handleRefresh = () => {
     setPage(1);
     setHasMore(true);
-    // Keep search value on refresh
     loadAssets(1, searchValue, true);
   };
 
@@ -167,10 +148,9 @@ const AuditAssetListScreen = ({ route, navigation }) => {
 
   const handleAssetSelect = asset => {
     setSelectedAsset(asset);
-    // Pre-fill existing values if available, otherwise default
     setCondition(asset.condition || 'working');
     setUsage(asset.usage || 'medium');
-    setRemark(asset.remarks || ''); // Note: API usually returns 'remarks', state is 'remark'
+    setRemark(asset.remarks || '');
     setModalVisible(true);
   };
 
@@ -194,10 +174,9 @@ const AuditAssetListScreen = ({ route, navigation }) => {
       };
 
       const response = await api.submitAuditEntry(organizationId, payload);
-      console.log('DEBUG: submitAuditEntry response:', response);
       if (response.data.success) {
         setModalVisible(false);
-        showToast("Audit submitted successfully", 'success');
+        showToast('Audit submitted successfully', 'success');
         loadAssets();
       } else {
         showToast(response.data.error, 'error');
@@ -221,7 +200,7 @@ const AuditAssetListScreen = ({ route, navigation }) => {
     navigation.push('AuditAssetList', {
       auditId,
       locationId,
-      categoryId: null, // All
+      categoryId: null,
       title: 'All Assets',
       organizationId,
       plantId,
@@ -367,7 +346,8 @@ const AuditAssetListScreen = ({ route, navigation }) => {
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Verify Asset</Text>
             <Text style={styles.assetName}>
-              {selectedAsset?.name || selectedAsset?.asset_code}
+              {selectedAsset?.organizationasset?.asset_code ||
+                selectedAsset?.asset_code}
             </Text>
 
             <Text style={styles.label}>Condition</Text>
@@ -464,7 +444,12 @@ const styles = StyleSheet.create({
     marginRight: SPACING.m,
   },
   title: { fontSize: 16, fontWeight: 'bold', color: COLORS.text },
-  empty: { textAlign: 'center', marginTop: 40, color: COLORS.textLight },
+  empty: {
+    textAlign: 'center',
+    marginTop: 40,
+    color: COLORS.textLight,
+    fontStyle: FONTS.italic,
+  },
 
   modalOverlay: {
     flex: 1,

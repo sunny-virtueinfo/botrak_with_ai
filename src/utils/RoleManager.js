@@ -5,8 +5,6 @@ export const ROLES = {
   APPROVER: 'approver',
 };
 
-// Module Definitions
-// Module Definitions
 const MODULES = {
   ASSETS: { id: 'assets', label: 'Assets', icon: 'box', route: 'AssetList' },
   CHECK_IN_OUT: {
@@ -68,7 +66,6 @@ const MODULES = {
 export const getUserRolesObject = roles => {
   let userRolesObject = {};
   const rawList = Array.isArray(roles) ? roles : [roles];
-  // Normalize roles to handle case sensitivity and whitespace
   const roleList = rawList.map(r =>
     typeof r === 'string' ? r.toLowerCase().trim() : '',
   );
@@ -142,11 +139,8 @@ export const getMenuItems = roleOrRoles => {
   if (access.InvoiceScreen) items.push(MODULES.INVOICE);
   if (access.CurrentPlanScreen) items.push(MODULES.PLAN);
 
-  // Always include Change Org
   items.push(MODULES.CHANGE_ORG);
 
-  // Eliminate duplicates if any (though logic above should prevent it)
-  // Logic above adds sequentially so duplicates are unlikely unless mapped multiple times
   return items;
 };
 
@@ -156,7 +150,7 @@ export const getPermissions = role => {
       return { canModifyAsset: true };
     case ROLES.EMPLOYEE:
     case ROLES.APPROVER:
-      return { canModifyAsset: false }; // "cannot modify asset"
+      return { canModifyAsset: false };
     default:
       return { canModifyAsset: false };
   }

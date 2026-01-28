@@ -8,7 +8,7 @@ import {
   TextInput,
   Modal,
 } from 'react-native';
-import { COLORS, SPACING, SHADOWS } from '../../theme';
+import { COLORS, SPACING, SHADOWS, FONTS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
 import { useToast } from '../../context/ToastContext';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
@@ -157,6 +157,7 @@ const EmployeeListScreen = ({ route, navigation }) => {
           placeholder="Search Employees..."
           value={search}
           onChangeText={handleSearch}
+          placeholderTextColor={COLORS.textLight}
         />
       </View>
 
@@ -269,9 +270,14 @@ const styles = StyleSheet.create({
   },
   info: { flex: 1 },
   name: { fontSize: 16, fontWeight: 'bold', color: COLORS.text },
-  email: { fontSize: 13, color: COLORS.textLight },
+  email: { fontSize: 13, color: COLORS.textLight, fontStyle: FONTS.italic },
   role: { fontSize: 12, color: COLORS.primary, marginTop: 2 },
-  emptyText: { textAlign: 'center', marginTop: 20, color: COLORS.textLight },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: COLORS.textLight,
+    fontStyle: FONTS.italic,
+  },
 
   // Modal
   modalOverlay: {

@@ -12,7 +12,7 @@ const CheckInOutScreen = ({ navigation, route }) => {
   const { user } = useAuth();
   const params = route.params || {};
   const [modalVisible, setModalVisible] = React.useState(false);
-  const [selectedAction, setSelectedAction] = React.useState(null); // { title, mode, label }
+  const [selectedAction, setSelectedAction] = React.useState(null);
 
   const userRoles = getUserRolesObject(user?.role_names || user?.role || []);
   const canModify = userRoles.isOrganizationSuperAdmin;
@@ -35,7 +35,7 @@ const CheckInOutScreen = ({ navigation, route }) => {
               redirectTo: 'CheckInOrOut',
               label: selectedAction.label,
             },
-      showBack: true, // Force back button for Stack navigation
+      showBack: true,
     });
   };
 
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   modalHandle: {
     width: 40,
     height: 4,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: COLORS.border,
     borderRadius: 2,
     alignSelf: 'center',
     marginBottom: SPACING.l,
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: COLORS.gradients.background[0],
     marginBottom: 8,
   },
   miniFab: {

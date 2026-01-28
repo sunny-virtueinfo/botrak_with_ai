@@ -81,8 +81,6 @@ export const useApiService = () => {
   };
 
   const getCategoriesByPlant = async (orgId = activeOrgId, params) => {
-    // Wrapper for ASSET_CATEGORIES_PLANT endpoint
-    // Params should typically include 'organization_asset' stringified
     return client.get(API_ENDPOINTS.ASSET_CATEGORIES_PLANT(orgId), {
       params,
       headers: { token: user?.token },
@@ -97,14 +95,12 @@ export const useApiService = () => {
   };
 
   const getManualAudit = async (orgId = activeOrgId, params) => {
-    // Construct query parameters manually to avoid sending "undefined" strings
-
     const requestParams = {
       organization_asset: JSON.stringify(params.organization_asset || {}),
       from_mobile: true,
     };
 
-    if (params.audit_id) {
+    if (params.audit_id && params.audit_id !== 'undefined') {
       requestParams.audit_id = params.audit_id;
     }
 
@@ -113,7 +109,9 @@ export const useApiService = () => {
     }
 
     if (params.q !== undefined && params.q !== null && params.q !== '') {
-      requestParams.q = JSON.stringify(params.q);
+      const qObject =
+        typeof params.q === 'string' ? { search_cont: params.q } : params.q;
+      requestParams.q = JSON.stringify(qObject);
     }
 
     return client.get(API_ENDPOINTS.FILTER_BY_ASSET_TYPE(orgId), {
@@ -122,19 +120,16 @@ export const useApiService = () => {
     });
   };
 
-  // Audit
   const getAudits = async (orgId = activeOrgId, params = {}) => {
     const { skip_audit_filter, ...otherParams } = params;
     const requestParams = { from_mobile: true };
 
     if (!skip_audit_filter) {
-      // Default behavior: create 'audit' JSON param with organization_id
       requestParams.audit = JSON.stringify({
         organization_id: orgId,
         ...otherParams,
       });
     } else {
-      // If skipping filter, use other params directly if any
       Object.assign(requestParams, otherParams);
     }
 
@@ -234,12 +229,43 @@ export const useApiService = () => {
   };
 
   const updateAsset = async (orgId = activeOrgId, data, params = {}) => {
-    return client.put(API_ENDPOINTS.ORGANIZATION_ASSETS(orgId), data, {
-      params,
-      headers: {
-        token: user?.token,
-      },
-    });
+    try {
+      const baseUrl = client.defaults.baseURL;
+      // Manually construct query string
+      const queryString = Object.keys(params)
+        .map(key => `${key}=${params[key]}`)
+        .join('&');
+
+      const url = `${baseUrl}${API_ENDPOINTS.ORGANIZATION_ASSETS(orgId)}${
+        queryString ? '?' + queryString : ''
+      }`;
+
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: {
+          token: user?.token,
+          // Explicitly NO Content-Type so boundary is added by fetch
+        },
+        body: data,
+      });
+
+      const responseText = await response.text();
+
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (e) {
+        console.error('Failed to parse JSON:', e);
+        throw new Error(
+          `Server returned non-JSON response: ${response.status}`,
+        );
+      }
+
+      return { data: responseData, status: response.status };
+    } catch (error) {
+      console.error('Fetch error:', error);
+      throw error;
+    }
   };
 
   const deleteAsset = async (orgId = activeOrgId, data, params = {}) => {
@@ -315,19 +341,13 @@ export const useApiService = () => {
     });
   };
 
-  // Assignments
-  /* Assignment & Employee Reference Implementations */
   const getEmployees = async (orgId = activeOrgId, params = {}) => {
-    // Switching to standard axios params.
     const requestParams = {
       from_mobile: true,
       page: params.page || 1,
     };
 
-    // Similar to getManualAudit, backend might expect JSON stringified q
     if (params.q !== undefined && params.q !== null && params.q !== '') {
-      // If q is just a string (search text), wrap it in a Ransack matcher
-      // Using 'search_cont' as requested by user
       const qObject =
         typeof params.q === 'string' ? { search_cont: params.q } : params.q;
 
@@ -344,7 +364,6 @@ export const useApiService = () => {
     const from_mobile = true;
     let queryString = `from_mobile=${from_mobile}`;
 
-    // Backend likely expects organization_asset param even if empty
     const orgAsset = params.organization_asset || {};
     queryString += `&organization_asset=${JSON.stringify(orgAsset)}`;
 
@@ -371,7 +390,6 @@ export const useApiService = () => {
   };
 
   const assignAsset = async (orgId = activeOrgId, data) => {
-    // User ref: HttpClient.post(ASSIGN_ASSET_API, body, undefined, token);
     return client.post(API_ENDPOINTS.ASSIGN_ASSET(orgId), data, {
       headers: { token: user?.token },
     });
@@ -389,7 +407,6 @@ export const useApiService = () => {
   };
 
   const unassignAsset = async (orgId = activeOrgId, data) => {
-    // User ref: HttpClient.post(UNASSIGN_ASSET_API, body, undefined, token);
     return client.post(API_ENDPOINTS.UNASSIGN_ASSET(orgId), data, {
       headers: { token: user?.token },
     });
@@ -401,7 +418,6 @@ export const useApiService = () => {
     assetId,
     data,
   ) => {
-    // URL: /:orgId/organization_assets/:assetId/audit_logs
     return client.put(API_ENDPOINTS.AUDIT_LOGS(orgId, assetId), data, {
       headers: { token: user?.token },
     });

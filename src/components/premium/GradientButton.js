@@ -42,21 +42,21 @@ const GradientButton = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    height: 50, // Match standard input height
+    height: 50,
     borderRadius: 12,
   },
   gradient: {
-    flex: 1, // Fill the container
+    flex: 1,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 12,
-    ...SHADOWS.medium, // Move shadow here for better rendering
+    ...SHADOWS.medium,
   },
   text: {
     color: COLORS.surface,
     fontSize: 16,
-    fontWeight: 'bold', // Slightly bolder
+    fontWeight: 'bold',
     letterSpacing: 0.5,
   },
 });

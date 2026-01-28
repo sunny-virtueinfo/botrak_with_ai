@@ -370,6 +370,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textLight,
     marginTop: 2,
+    fontStyle: FONTS.italic,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -474,6 +475,7 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
     marginTop: SPACING.m,
     marginBottom: SPACING.m,
+    fontStyle: FONTS.italic,
   },
   retryButton: {
     paddingVertical: 8,

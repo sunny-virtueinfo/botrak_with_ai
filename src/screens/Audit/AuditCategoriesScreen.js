@@ -16,10 +16,10 @@ import { useApiService } from '../../services/ApiService';
 import GlassCard from '../../components/premium/GlassCard';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
+import { useCustomModal } from '../../context/ModalContext';
 
 const { width } = Dimensions.get('window');
 
-// Helper to get consistent icons
 const getCategoryIcon = () => 'layers';
 
 const AuditCategoriesScreen = ({ route, navigation }) => {
@@ -29,6 +29,7 @@ const AuditCategoriesScreen = ({ route, navigation }) => {
   const [showFabOptions, setShowFabOptions] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { showModal } = useCustomModal();
 
   const api = useApiService();
 
@@ -47,7 +48,6 @@ const AuditCategoriesScreen = ({ route, navigation }) => {
       const assetTypes = response.data.asset_type || response.data.data;
 
       if (assetTypes) {
-        // Handle both simple strings and objects
         const formattedCategories = assetTypes.map((item, index) => {
           if (typeof item === 'string') {
             return { id: item, name: item };
@@ -58,7 +58,7 @@ const AuditCategoriesScreen = ({ route, navigation }) => {
       }
     } catch (e) {
       console.error(e);
-      Alert.alert('Error', 'Failed to load categories');
+      showModal('Error', 'Failed to load categories');
     } finally {
       setLoading(false);
     }
@@ -85,7 +85,7 @@ const AuditCategoriesScreen = ({ route, navigation }) => {
     navigation.navigate('AuditAssetList', {
       auditId,
       locationId,
-      categoryId: null, // All
+      categoryId: null,
       title: 'All Assets',
       organizationId,
       plantId,
@@ -120,7 +120,6 @@ const AuditCategoriesScreen = ({ route, navigation }) => {
             <Text style={styles.cardTitle} numberOfLines={2}>
               {item.name}
             </Text>
-            {/* Optional: Add item count if available in future */}
           </View>
           <Feather name="chevron-right" size={28} color={COLORS.textLight} />
         </GlassCard>
@@ -129,11 +128,7 @@ const AuditCategoriesScreen = ({ route, navigation }) => {
   };
 
   return (
-    <ScreenWrapper
-      title={`Categories`}
-      showBack={true}
-      // headerGradientColors={COLORS.gradients.primary}
-    >
+    <ScreenWrapper title={`Categories`} showBack={true}>
       <View style={styles.headerContainer}>
         <Text style={styles.locationLabel}>Location</Text>
         <Text style={styles.locationTitle}>
@@ -153,9 +148,7 @@ const AuditCategoriesScreen = ({ route, navigation }) => {
           data={categories}
           renderItem={renderItem}
           keyExtractor={(item, index) => (item.id || index).toString()}
-          numColumns={2}
           contentContainerStyle={styles.list}
-          columnWrapperStyle={styles.columnWrapper}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -245,6 +238,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
     fontWeight: '600',
+    fontStyle: FONTS.italic,
   },
   locationTitle: {
     fontSize: 22,
@@ -261,7 +255,8 @@ const styles = StyleSheet.create({
 
   list: {
     paddingHorizontal: SPACING.m,
-    paddingBottom: 100, // Space for FAB
+    paddingBottom: 100,
+    gap: 10, // Space for FAB
   },
   columnWrapper: {
     justifyContent: 'space-between',
@@ -311,6 +306,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.textLight,
     marginTop: SPACING.m,
+    fontStyle: FONTS.italic,
   },
 
   // FAB Styles

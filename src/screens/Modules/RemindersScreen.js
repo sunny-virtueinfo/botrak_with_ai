@@ -33,6 +33,7 @@ const RemindersScreen = ({ route, navigation }) => {
         return;
       }
       const response = await api.getReminders(organizationId);
+      console.log('response', response);
       if (response.data && response.data.success) {
         setReminders(response.data.organization_reminders || []);
       }
@@ -51,7 +52,6 @@ const RemindersScreen = ({ route, navigation }) => {
 
   const handleManual = () => {
     setShowFabOptions(false);
-    // Navigate to StackAssetList for selecting asset for reminder
     navigation.navigate('PlantSelection', {
       nextScreen: 'StackAssetList',
       isForReminder: true,
@@ -64,43 +64,51 @@ const RemindersScreen = ({ route, navigation }) => {
     navigation.navigate('QRScanner', { organizationId, mode: 'reminder' });
   };
 
-  const renderItem = ({ item }) => (
-    <GlassCard style={styles.card}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{item.title}</Text>
-        <View
-          style={[
-            styles.badge,
-            {
-              backgroundColor:
-                item.reminder_type === 'maintenance'
+  const renderItem = ({ item }) => {
+    // Determine the type to display/style
+    const type = item.reminder_type || 'General';
+    const isMaintenance = type.toLowerCase() === 'maintenance';
+
+    // Fallback for fields
+    const title = item.title || item.asset_name || 'Reminder';
+    const message =
+      item.message || item.description || 'No description provided';
+    const dateStr = item.reminder_date || item.date;
+    const formattedDate = dateStr ? new Date(dateStr).toDateString() : 'N/A';
+
+    return (
+      <GlassCard style={styles.card}>
+        <View style={styles.header}>
+          <Text style={styles.title}>{title}</Text>
+          <View
+            style={[
+              styles.badge,
+              {
+                backgroundColor: isMaintenance
                   ? COLORS.error
                   : COLORS.secondary,
-            },
-          ]}
-        >
-          <Text style={styles.badgeText}>{item.reminder_type}</Text>
+              },
+            ]}
+          >
+            <Text style={styles.badgeText}>{type}</Text>
+          </View>
         </View>
-      </View>
-      <Text style={styles.message}>{item.message}</Text>
-      <Text style={styles.date}>
-        Due:{' '}
-        {item.reminder_date
-          ? new Date(item.reminder_date).toDateString()
-          : 'N/A'}
-      </Text>
-    </GlassCard>
-  );
+        <Text style={styles.message}>{message}</Text>
+
+        {/* Show asset code if available */}
+        {item.asset_code && (
+          <Text style={[styles.message, { fontWeight: 'bold' }]}>
+            Asset: {item.asset_code}
+          </Text>
+        )}
+
+        <Text style={styles.date}>Due: {formattedDate}</Text>
+      </GlassCard>
+    );
+  };
 
   return (
     <ScreenWrapper title="Reminders" showMenu={true} scrollable={false}>
-      {/* Use Loader for initial load if needed, but here we just have refreshing on list.
-           However, let's add a global loader if we were fetching on mount without refreshing prop.
-           For now, the user requested 'proper loader', so let's check if we have a robust loading state.
-           The code has `useEffect` calling `loadReminders`. `loadReminders` does not set a loading state other than relying on `refreshing`?
-           Actually `refreshing` is only for pull-to-refresh.
-           Let's add `isLoading` state.
-       */}
       <Loader visible={loading} />
       <FlatList
         data={reminders}
@@ -114,7 +122,6 @@ const RemindersScreen = ({ route, navigation }) => {
         }
       />
 
-      {/* FAB Options Overlay */}
       {showFabOptions && (
         <View style={styles.fabOptionsContainer}>
           <TouchableOpacity style={styles.fabOption} onPress={handleManual}>
@@ -132,7 +139,6 @@ const RemindersScreen = ({ route, navigation }) => {
         </View>
       )}
 
-      {/* Main FAB */}
       <TouchableOpacity
         style={styles.fab}
         activeOpacity={0.8}
@@ -177,7 +183,12 @@ const styles = StyleSheet.create({
   },
   message: { fontSize: 14, color: COLORS.textLight, marginBottom: SPACING.s },
   date: { fontSize: 12, color: COLORS.primary, fontWeight: '600' },
-  emptyText: { textAlign: 'center', marginTop: 20, color: COLORS.textLight },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: COLORS.textLight,
+    fontStyle: FONTS.italic,
+  },
 
   // FAB Styles
   fab: {

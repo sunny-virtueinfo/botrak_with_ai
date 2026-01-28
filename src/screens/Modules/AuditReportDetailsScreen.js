@@ -9,13 +9,13 @@ import {
   TextInput,
 } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
-import { COLORS, SPACING, SHADOWS } from '../../theme';
+import { COLORS, SPACING, SHADOWS, FONTS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
 import GlassCard from '../../components/premium/GlassCard';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
 
-import GenericDropdown from '../../components/common/GenericDropdown';
+import CustomDropDown from '../../components/common/CustomDropDown';
 
 const FILTERS = {
   case1: [
@@ -59,10 +59,10 @@ const FILTERS = {
 
 const TABS = [
   { id: 'case1', label: 'Found' },
-  { id: 'case5', label: 'Not Found' },
   { id: 'case2', label: 'Condition' },
   { id: 'case3', label: 'Usage' },
   { id: 'case4', label: 'New' },
+  { id: 'case5', label: 'Not Found' },
 ];
 
 const AuditReportDetailsScreen = ({ route, navigation }) => {
@@ -115,12 +115,11 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
         const key = keyMap[activeTab];
         if (key) {
           let valToSend = filterValue;
-          // If filterValue is empty (e.g. "All" selected), set specific defaults
           if (!valToSend) {
             if (activeTab === 'case1') {
-              valToSend = ''; // found_status expects empty string for All
+              valToSend = '';
             } else {
-              valToSend = 'all'; // others expect "all" string
+              valToSend = 'all';
             }
           }
           body[key] = valToSend;
@@ -136,7 +135,7 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
 
         const responseKey = apiMap[activeTab];
         const res = await api.getAuditReports(organizationId, auditId, body);
-
+        console.log('res', res);
         if (res.data && res.data.success) {
           const resultData = res.data[responseKey] || [];
           if (resultData.length === 0) {
@@ -166,13 +165,11 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
     setPage(1);
     setHasMore(true);
     setData([]);
-    setFilterValue(''); // Reset filter on tab change
+    setFilterValue('');
     fetchPage(1);
   }, [activeTab]);
 
   useEffect(() => {
-    // Debounce is less critical for dropdown but safe to keep or remove.
-    // Since it's a dropdown, immediate fetch is usually fine, but keeping existing logic structure.
     const timer = setTimeout(() => {
       setPage(1);
       setHasMore(true);
@@ -181,7 +178,6 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
     return () => clearTimeout(timer);
   }, [filterValue]);
 
-  // Helper to capitalize first letter of each word
   const capitalize = str => {
     if (!str) return '';
     return String(str).replace(/\b\w/g, l => l.toUpperCase());
@@ -233,44 +229,23 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
                 break;
             }
 
-            // Fallback if the specific value is missing (e.g. no condition set)
-            // But usually we render what we have.
             if (!valueToShow && activeTab !== 'case1') return null;
 
             return (
               <View
                 style={[
                   styles.badge,
-                  // Default colors (Green/Red for Found/Not Found) for Case 1, else generic Surface/Primary
-                  activeTab === 'case1'
-                    ? {
-                      backgroundColor:
-                        item.found === 'Found'
-                          ? COLORS.success + '20'
-                          : COLORS.error + '20',
-                    }
-                    : {
-                      backgroundColor: COLORS.surface,
-                      borderWidth: 1,
-                      borderColor: COLORS.border,
-                    },
-                  // Apply Highlight - REMOVED as per request
-                  // getHighlightStyle(valueToShow)
+                  {
+                    backgroundColor: COLORS.success + '20',
+                  },
                 ]}
               >
                 <Text
                   style={[
                     styles.badgeText,
-                    activeTab === 'case1'
-                      ? {
-                        color:
-                          item.found === 'Found'
-                            ? COLORS.success
-                            : COLORS.error,
-                      }
-                      : {
-                        color: COLORS.text,
-                      },
+                    {
+                      color: COLORS.success,
+                    },
                   ]}
                   numberOfLines={1}
                 >
@@ -294,19 +269,25 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
         {item.condition && (
           <View style={[styles.detailItem]}>
             <Feather name="activity" size={12} color={COLORS.textLight} />
-            <Text style={styles.detailText}>{capitalize(item.condition)}</Text>
+            <Text style={styles.detailText}>
+              Condition: {capitalize(item.condition)}
+            </Text>
           </View>
         )}
         {item.usage && (
           <View style={[styles.detailItem]}>
             <Feather name="clock" size={12} color={COLORS.textLight} />
-            <Text style={styles.detailText}>{capitalize(item.usage)}</Text>
+            <Text style={styles.detailText}>
+              Usage: {capitalize(item.usage)}
+            </Text>
           </View>
         )}
-        {item.mode && (
+        {item.qr_scan !== undefined && (
           <View style={[styles.detailItem]}>
             <Feather name="settings" size={12} color={COLORS.textLight} />
-            <Text style={styles.detailText}>Mode: {item.mode}</Text>
+            <Text style={styles.detailText}>
+              Mode: {item.qr_scan ? 'QR Scanning' : 'Manual'}
+            </Text>
           </View>
         )}
         {item.updated_at && (
@@ -363,12 +344,13 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
       </View>
 
       <View style={styles.filterContainer}>
-        <GenericDropdown
+        <CustomDropDown
           label="Filter By"
           data={FILTERS[activeTab] || []}
           value={filterValue}
-          onValueChange={setFilterValue}
+          onValueChange={val => setFilterValue(val?.value ?? val)}
           placeholder="Select Filter"
+          style={styles.dropdownBtn}
         />
       </View>
 
@@ -427,6 +409,17 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.m,
     zIndex: 100, // Ensure dropdown overlays list
   },
+  dropdownBtn: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 12,
+  },
   listContent: { padding: SPACING.m },
   card: { marginBottom: SPACING.m, padding: SPACING.m },
   row: {
@@ -447,13 +440,14 @@ const styles = StyleSheet.create({
   detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: 10,
+    marginBottom: 6, // Add margin bottom for improved wrapping
     backgroundColor: COLORS.surface,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
-  detailText: { fontSize: 12, color: COLORS.text, marginLeft: 4 },
+  detailText: { fontSize: 11, color: COLORS.text, marginLeft: 4 },
   divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 10 },
   remarkContainer: {
     marginTop: 10,
@@ -464,7 +458,7 @@ const styles = StyleSheet.create({
   remarkLabel: { fontSize: 10, color: COLORS.textLight, fontWeight: 'bold' },
   remark: {
     marginTop: 2,
-    fontStyle: 'italic',
+    fontStyle: FONTS.italic,
     fontSize: 12,
     color: COLORS.text,
   },

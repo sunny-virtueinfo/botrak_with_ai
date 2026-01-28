@@ -38,10 +38,8 @@ const Drawer = createDrawerNavigator();
 const DrawerNavigator = ({ route }) => {
   const { user } = useAuth();
 
-  // Robustly determine role: User Context -> Param -> Default
   let effectiveRole = null;
 
-  // 1. Priority: User Object Role Names (as requested)
   if (
     user &&
     user.role_names &&
@@ -51,31 +49,20 @@ const DrawerNavigator = ({ route }) => {
     effectiveRole = user.role_names[0];
   }
 
-  // // 2. Fallback: Param Role
-  // if (!effectiveRole) {
-  //   effectiveRole = route.params.role;
-  // }
-
-  // 3. Last Resort: User.role
   if (!effectiveRole && user && user.role) {
     effectiveRole = user.role;
   }
   effectiveRole = effectiveRole || 'employee';
 
-  // Helper to pass params to all screens
   const commonOptions = {
     initialParams: { ...route.params },
   };
-  // Determine permissions based on effective role
-  // We need to fetch the permissions object for the effective role (or all user roles)
-  // Since effectiveRole is singular here (for SideMenu prop), we might want to check the full user roles for routing too.
 
   const {
     getUserRolesObject,
     getScreenAccess,
   } = require('../utils/RoleManager');
 
-  // Use user.role_names if available for accurate permission check, otherwise effectiveRole
   const routeRoles =
     user?.role_names && user.role_names.length > 0
       ? user.role_names
@@ -83,8 +70,6 @@ const DrawerNavigator = ({ route }) => {
   const userRolesObj = getUserRolesObject(routeRoles);
   const screenAccess = getScreenAccess(userRolesObj);
 
-  // Determine initial screen based on ACCESS, not just role name
-  // Priority: CheckInOut -> AuditList -> AssetList
   let initialRoute = 'CheckInOut';
 
   if (screenAccess.AssetCheckInOutScreen) {
@@ -177,12 +162,10 @@ const AppNavigator = () => {
     const prepareNavigation = async () => {
       if (user) {
         try {
-          // 1. Try Storage
           const storedOrg = await AsyncStorage.getItem('active_org');
 
           if (storedOrg) {
             const defaultOrg = JSON.parse(storedOrg);
-            // Sync with AuthContext to ensure UI consistency
             if (updateUserOrg && user) {
               if (
                 user.organization_id !== defaultOrg.organization_id ||
@@ -196,7 +179,6 @@ const AppNavigator = () => {
             }
             setupDashboard(defaultOrg);
           } else {
-            // 2. Fallback: Fetch from API and Auto-Select First
             try {
               const response = await api.getMyOrganizations();
               if (
@@ -204,30 +186,22 @@ const AppNavigator = () => {
                 response.data.my_organizations &&
                 response.data.my_organizations.length > 0
               ) {
-                // Find first org with active plan
                 let firstOrgRaw = response.data.my_organizations.find(
                   org =>
                     org.is_plan_active === true || org.is_plan_active === 1,
                 );
-
-                // Fallback to first org if no active plan found (or let it fail if strict?)
                 if (!firstOrgRaw) {
                   firstOrgRaw = response.data.my_organizations[0];
                 }
-                // ...
-                // Standardize to organization_id
                 const firstOrg = {
                   organization_id: firstOrgRaw.organization_id,
                   name: firstOrgRaw.organization_name,
                   role: firstOrgRaw.role,
                 };
-                // Save for future
                 await AsyncStorage.setItem(
                   'active_org',
                   JSON.stringify(firstOrg),
                 );
-
-                // Sync with AuthContext
                 if (updateUserOrg && user) {
                   if (
                     user.organization_id !== firstOrg.organization_id ||
@@ -242,8 +216,6 @@ const AppNavigator = () => {
 
                 setupDashboard(firstOrg);
               } else {
-                // No orgs? Stay on MyOrganizations or go to Dashboard empty?
-                // Default state is MyOrganizations, so do nothing.
               }
             } catch (apiErr) {
               console.error('Failed to auto-fetch orgs', apiErr);
@@ -257,7 +229,6 @@ const AppNavigator = () => {
     };
 
     const setupDashboard = org => {
-      // Check for global role from user object ONLY if org.role is missing
       let effectiveRole = org.role;
 
       if (!effectiveRole && user.role_names && Array.isArray(user.role_names)) {
@@ -266,15 +237,14 @@ const AppNavigator = () => {
         }
       }
 
-      // Ensure we don't have empty role
       if (!effectiveRole && user.role) {
         effectiveRole = user.role;
       }
 
       setInitialRoute('Dashboard');
       setInitialParams({
-        organizationId: org.organization_id, // Support current state but prefer organization_id
-        orgName: org.name,
+        organizationId: org.organization_id,
+        orgName: org.organization_name,
         role: effectiveRole || 'employee',
       });
     };
