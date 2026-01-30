@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
-import { COLORS, SPACING, FONTS } from '../../theme';
-import GlassCard from '../../components/premium/GlassCard';
+import Feather from 'react-native-vector-icons/Feather';
+import { COLORS, SPACING, FONTS, SHADOWS } from '../../theme';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
-import ActionCard from '../../components/common/ActionCard';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
 import { useAuth } from '../../context/AuthContext';
 import { getUserRolesObject } from '../../utils/RoleManager';
 
@@ -47,92 +47,121 @@ const CheckInOutScreen = ({ navigation, route }) => {
     });
   };
 
+  const ActionItem = ({ title, description, image, color, onPress, style }) => (
+    <Card
+      variant="elevated"
+      style={[
+        styles.actionCard,
+        { borderLeftColor: color, borderLeftWidth: 4 },
+        style,
+      ]}
+      onPress={onPress}
+    >
+      <View style={styles.actionContent}>
+        <View style={[styles.iconBox, { backgroundColor: color + '20' }]}>
+          <Image
+            source={image}
+            style={styles.actionImage}
+            resizeMode="contain"
+          />
+        </View>
+        <View style={styles.textContainer}>
+          <Text style={styles.actionTitle}>{title}</Text>
+          <Text style={styles.actionDesc}>{description}</Text>
+        </View>
+        <Feather name="chevron-right" size={24} color={COLORS.textLight} />
+      </View>
+    </Card>
+  );
+
   return (
     <ScreenWrapper title="Asset Check In/Out" showMenu={true} scrollable={true}>
       <View style={styles.content}>
-        <Text style={styles.subHeader}>
-          Select an option to identify the asset
-        </Text>
+        <Text style={styles.subHeader}>Select an action to proceed</Text>
 
-        <ActionCard
-          title="Asset Check In"
-          description="Return an asset"
-          icon={require('../../assets/checkIn.png')}
-          color={COLORS.successLight}
-          iconColor={COLORS.success}
-          onPress={() =>
-            handleOptionPress({
-              title: 'Check In Asset',
-              mode: 'check_in',
-              label: 'Check-in',
-            })
-          }
-        />
-
-        <ActionCard
-          title="Asset Check Out"
-          description="Assign an asset"
-          icon={require('../../assets/checkOut.png')}
-          color={COLORS.warningLight}
-          iconColor={COLORS.warning}
-          onPress={() =>
-            handleOptionPress({
-              title: 'Check Out Asset',
-              mode: 'check_out',
-              label: 'Check-out',
-            })
-          }
-        />
-
-        {canModify && (
-          <ActionCard
-            title="Modify Asset"
-            description="Update asset details"
-            icon={require('../../assets/modifyAsset.png')}
-            color={COLORS.infoLight}
-            iconColor={COLORS.info}
+        <View style={styles.cardsContainer}>
+          <ActionItem
+            title="Asset Check In"
+            description="Return an asset to inventory"
+            image={require('../../assets/checkIn.png')}
+            color={COLORS.success}
             onPress={() =>
               handleOptionPress({
-                title: 'Modify Asset',
-                mode: 'modify',
-                label: 'Modify',
+                title: 'Check In Asset',
+                mode: 'check_in',
+                label: 'Check-in',
               })
             }
           />
-        )}
+
+          <ActionItem
+            title="Asset Check Out"
+            description="Assign an asset to a user/location"
+            image={require('../../assets/checkOut.png')}
+            color={COLORS.warning}
+            onPress={() =>
+              handleOptionPress({
+                title: 'Check Out Asset',
+                mode: 'check_out',
+                label: 'Check-out',
+              })
+            }
+            style={{ marginTop: 20 }}
+          />
+
+          {canModify && (
+            <ActionItem
+              title="Modify Asset"
+              description="Update asset details and status"
+              image={require('../../assets/modifyAsset.png')}
+              color={COLORS.info}
+              onPress={() =>
+                handleOptionPress({
+                  title: 'Modify Asset',
+                  mode: 'modify',
+                  label: 'Modify',
+                })
+              }
+              style={{ marginTop: 20 }}
+            />
+          )}
+        </View>
       </View>
 
       {/* Mode Selection Modal */}
       {modalVisible && (
         <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setModalVisible(false)}
+          />
           <View style={styles.modalContent}>
             <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>Select Method</Text>
 
-            <TouchableOpacity style={styles.modalOption} onPress={handleManual}>
-              <View
-                style={[styles.miniFab, { backgroundColor: COLORS.primary }]}
-              >
-                <Icon name="list" size={24} color="white" />
-              </View>
-              <Text style={styles.modalOptionText}>Manual Selection</Text>
-            </TouchableOpacity>
+            <Button
+              title="Manual Selection"
+              icon="list"
+              variant="primary"
+              onPress={handleManual}
+              style={{ marginBottom: 16 }}
+            />
 
-            <TouchableOpacity style={styles.modalOption} onPress={handleQRScan}>
-              <View
-                style={[styles.miniFab, { backgroundColor: COLORS.secondary }]}
-              >
-                <Icon name="camera" size={24} color="white" />
-              </View>
-              <Text style={styles.modalOptionText}>QR Scan</Text>
-            </TouchableOpacity>
+            <Button
+              title="Scan QR Code"
+              icon="maximize"
+              variant="secondary"
+              onPress={handleQRScan}
+              style={{ marginBottom: 24 }}
+            />
 
-            <TouchableOpacity
-              style={styles.closeButton}
+            <Button
+              title="Cancel"
+              variant="ghost"
               onPress={() => setModalVisible(false)}
-            >
-              <Text style={styles.closeButtonText}>Cancel</Text>
-            </TouchableOpacity>
+              style={styles.closeButton}
+            />
           </View>
         </View>
       )}
@@ -141,15 +170,61 @@ const CheckInOutScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  content: { padding: SPACING.l, justifyContent: 'center', flex: 1 },
+  content: {
+    padding: SPACING.l,
+    flex: 1,
+    justifyContent: 'center', // Center content vertically
+  },
+  cardsContainer: {
+    justifyContent: 'center',
+    paddingBottom: 40, // Add some bottom padding for visual balance
+  },
   subHeader: {
     fontSize: 18,
     color: COLORS.textLight,
     marginBottom: SPACING.xl,
     textAlign: 'center',
-    marginTop: SPACING.m,
-    fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
+  actionCard: {
+    padding: SPACING.l, // Larger padding for premium feel
+    borderRadius: 20,
+    ...SHADOWS.medium,
+  },
+  actionContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconBox: {
+    width: 60,
+    height: 60,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 20,
+  },
+  actionImage: {
+    width: 32,
+    height: 32,
+    tintColor: COLORS.text,
+  },
+  textContainer: {
+    flex: 1,
+  },
+  actionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: COLORS.text,
+    fontFamily: FONTS.bold,
+    marginBottom: 6,
+  },
+  actionDesc: {
+    fontSize: 14,
+    color: COLORS.textLight,
+    fontFamily: FONTS.regular,
+    lineHeight: 20,
+  },
+
   // Modal Styles
   modalOverlay: {
     position: 'absolute',
@@ -157,72 +232,36 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)', // Darker overlay
+    backgroundColor: 'rgba(15, 23, 42, 0.7)',
     justifyContent: 'flex-end',
     zIndex: 1000,
   },
   modalContent: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     padding: SPACING.l,
     paddingBottom: SPACING.xl + 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 10,
+    ...SHADOWS.hard,
   },
   modalHandle: {
-    width: 40,
-    height: 4,
+    width: 50,
+    height: 5,
     backgroundColor: COLORS.border,
-    borderRadius: 2,
+    borderRadius: 3,
     alignSelf: 'center',
     marginBottom: SPACING.l,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: SPACING.l,
+    fontSize: 22,
+    fontWeight: '800',
+    marginBottom: SPACING.xl,
     textAlign: 'center',
     color: COLORS.text,
-  },
-  modalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.gradients.background[0],
-    marginBottom: 8,
-  },
-  miniFab: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: SPACING.m,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  modalOptionText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: COLORS.text,
+    fontFamily: FONTS.bold,
   },
   closeButton: {
-    marginTop: SPACING.m,
-    alignSelf: 'center',
-    padding: 12,
-  },
-  closeButtonText: {
-    color: COLORS.primary,
-    fontSize: 16,
-    fontWeight: 'bold',
+    borderRadius: 16,
   },
 });
 

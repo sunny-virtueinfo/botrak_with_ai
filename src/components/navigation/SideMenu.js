@@ -20,6 +20,7 @@ import OrganizationSwitchModal from '../common/OrganizationSwitchModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useApiService } from '../../services/ApiService';
 import { useToast } from '../../context/ToastContext';
+import Button from '../common/Button';
 
 const SideMenu = ({ navigation, state }) => {
   const { user, logout, updateUserOrg } = useAuth();
@@ -37,7 +38,6 @@ const SideMenu = ({ navigation, state }) => {
         if (user?.organization_name) {
           setActiveOrgName(user.organization_name);
         } else {
-          // Fallback for legacy session or initial load
           const storedOrg = await AsyncStorage.getItem('active_org');
           if (storedOrg) {
             const parsed = JSON.parse(storedOrg);
@@ -45,10 +45,8 @@ const SideMenu = ({ navigation, state }) => {
           }
         }
 
-        // Fetch Approval Count
         if (user?.recent_organization_id) {
           const res = await api.getPendingRequests(user.recent_organization_id);
-          // Check for count directly or array length
           const count =
             res?.data?.count ??
             (Array.isArray(res?.data)
@@ -122,7 +120,6 @@ const SideMenu = ({ navigation, state }) => {
       organization_name: org.organization_name || org.name,
       role: extractedRole,
     };
-    // Update local state immediately
     setActiveOrgName(newOrg.organization_name);
 
     try {
@@ -146,7 +143,7 @@ const SideMenu = ({ navigation, state }) => {
           params: {
             organizationId: newOrg.organization_id,
             orgName: newOrg.organization_name,
-            organization_name: newOrg.organization_name, // Pass both for safety if other screens use different keys
+            organization_name: newOrg.organization_name,
             role: newOrg.role || 'employee',
           },
         },
@@ -156,13 +153,14 @@ const SideMenu = ({ navigation, state }) => {
   };
 
   return (
-    <LinearGradient colors={['#F8FAFC', '#E2E8F0']} style={styles.container}>
+    <LinearGradient colors={['#F1F5F9', '#E2E8F0']} style={styles.container}>
       <OrganizationSwitchModal
         visible={isOrgModalVisible}
         onClose={() => setOrgModalVisible(false)}
         onSelect={handleSwitchOrg}
       />
 
+      {/* Assignment Modal */}
       <Modal
         visible={assignmentModalVisible}
         transparent
@@ -176,7 +174,6 @@ const SideMenu = ({ navigation, state }) => {
             <TouchableWithoutFeedback>
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
-                  <View style={{ width: 24 }} />
                   <Text style={styles.modalTitle}>Assignment Mode</Text>
                   <TouchableOpacity
                     onPress={() => setAssignmentModalVisible(false)}
@@ -188,39 +185,26 @@ const SideMenu = ({ navigation, state }) => {
                   Choose how to assign assets
                 </Text>
 
-                <TouchableOpacity
-                  style={styles.modeBtn}
+                <Button
+                  title="Manual Selection"
+                  icon="list"
                   onPress={handleManualSelect}
-                >
-                  <MaterialCommunityIcons
-                    name="format-list-bulleted"
-                    size={22}
-                    color="white"
-                  />
-                  <Text style={styles.modeBtnText}>Manual Selection</Text>
-                </TouchableOpacity>
+                  style={{ marginBottom: 12, backgroundColor: COLORS.primary }}
+                />
 
-                <TouchableOpacity
-                  style={[
-                    styles.modeBtn,
-                    { backgroundColor: COLORS.secondary },
-                  ]}
+                <Button
+                  title="Scan QR Code"
+                  icon="maximize"
                   onPress={handleQRSelect}
-                >
-                  <MaterialCommunityIcons
-                    name="qrcode-scan"
-                    size={22}
-                    color="white"
-                  />
-                  <Text style={styles.modeBtnText}>Scan QR Code</Text>
-                </TouchableOpacity>
+                  style={{ backgroundColor: COLORS.secondary }}
+                />
               </View>
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* Logout Confirmation Modal */}
+      {/* Logout Modal */}
       <Modal
         visible={logoutModalVisible}
         transparent
@@ -231,46 +215,37 @@ const SideMenu = ({ navigation, state }) => {
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback>
               <View style={styles.modalContent}>
-                <View
-                  style={[
-                    styles.logoutIconWrapper,
-                    {
-                      marginBottom: 16,
-                      backgroundColor: '#FEE2E2',
-                      borderRadius: 50,
-                      padding: 16,
-                    },
-                  ]}
-                >
+                <View style={styles.logoutIconWrapper}>
                   <Feather name="log-out" size={32} color={COLORS.error} />
                 </View>
-                <Text style={styles.modalTitle}>Log Out</Text>
-                <Text style={[styles.modalSubtitle, { textAlign: 'center' }]}>
-                  Are you sure you want to sign out of your account?
+                <Text style={[styles.modalTitle, { textAlign: 'center' }]}>
+                  Log Out
+                </Text>
+                <Text style={styles.modalSubtitleCentered}>
+                  Are you sure you want to sign out?
                 </Text>
 
-                <View style={{ flexDirection: 'row', gap: 12, marginTop: 8 }}>
-                  <TouchableOpacity
-                    style={[
-                      styles.modeBtn,
-                      { flex: 1, backgroundColor: '#F1F5F9', elevation: 0 },
-                    ]}
-                    onPress={() => setLogoutModalVisible(false)}
-                  >
-                    <Text style={[styles.modeBtnText, { color: COLORS.text }]}>
-                      Cancel
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[
-                      styles.modeBtn,
-                      { flex: 1, backgroundColor: COLORS.error },
-                    ]}
-                    onPress={confirmLogout}
-                  >
-                    <Text style={styles.modeBtnText}>Log Out</Text>
-                  </TouchableOpacity>
+                <View style={styles.modalActionRow}>
+                  <View style={{ flex: 1, marginRight: 6 }}>
+                    <Button
+                      title="Cancel"
+                      variant="ghost"
+                      onPress={() => setLogoutModalVisible(false)}
+                      style={{
+                        width: '100%',
+                        backgroundColor: COLORS.surfaceHighlight,
+                      }}
+                      textStyle={{ color: COLORS.text }}
+                    />
+                  </View>
+                  <View style={{ flex: 1, marginLeft: 6 }}>
+                    <Button
+                      title="Log Out"
+                      variant="danger"
+                      onPress={confirmLogout}
+                      style={{ width: '100%' }}
+                    />
+                  </View>
                 </View>
               </View>
             </TouchableWithoutFeedback>
@@ -279,10 +254,10 @@ const SideMenu = ({ navigation, state }) => {
       </Modal>
 
       <SafeAreaView style={styles.safeArea}>
-        {/* Modern Floating Header Profile */}
+        {/* User Profile Header */}
         <View style={styles.header}>
           <LinearGradient
-            colors={[COLORS.primary, '#6366F1']}
+            colors={COLORS.gradients.primary}
             style={styles.avatar}
           >
             <Text style={styles.avatarText}>
@@ -297,7 +272,6 @@ const SideMenu = ({ navigation, state }) => {
 
             {activeOrgName ? (
               <Text style={styles.orgName} numberOfLines={1}>
-                {/* <Feather name="briefcase" size={12} color={COLORS.textLight} />  */}
                 {activeOrgName}
               </Text>
             ) : null}
@@ -305,14 +279,15 @@ const SideMenu = ({ navigation, state }) => {
             <Text style={styles.userEmail} numberOfLines={1}>
               {user?.email || 'user@botrak.com'}
             </Text>
+          </View>
 
-            <View style={styles.roleBadge}>
-              <Text style={styles.roleText}>
-                {(activeRoles || [])
-                  .map(r => (r ? r.replace(/_/g, ' ').toUpperCase() : ''))
-                  .join(', ')}
-              </Text>
-            </View>
+          <View style={styles.roleBadge}>
+            <Text style={styles.roleText}>
+              {(activeRoles || [])
+                .map(r => (r ? r.replace(/_/g, ' ').toUpperCase() : ''))
+                .join(', ')
+                .slice(0, 3)}
+            </Text>
           </View>
         </View>
 
@@ -320,7 +295,7 @@ const SideMenu = ({ navigation, state }) => {
           <ScrollView
             style={styles.menuContainer}
             showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingVertical: 10 }}
+            contentContainerStyle={{ paddingVertical: SPACING.m }}
           >
             {(menuItems || []).map(item => {
               const active = isActive(item.route);
@@ -334,13 +309,13 @@ const SideMenu = ({ navigation, state }) => {
                   <View
                     style={[
                       styles.iconContainer,
-                      active && { backgroundColor: '#fff' },
+                      active && { backgroundColor: 'rgba(255,255,255,0.2)' },
                     ]}
                   >
                     <Feather
                       name={item.icon}
                       size={20}
-                      color={active ? COLORS.primary : COLORS.textLight}
+                      color={active ? '#fff' : COLORS.textLight}
                     />
                   </View>
                   <Text
@@ -364,15 +339,12 @@ const SideMenu = ({ navigation, state }) => {
             })}
           </ScrollView>
 
-          {/* Floating Logout */}
           <View style={styles.footer}>
             <TouchableOpacity
               style={styles.logoutButton}
               onPress={handleLogout}
             >
-              <View style={styles.logoutIconWrapper}>
-                <Feather name="log-out" size={18} color={COLORS.error} />
-              </View>
+              <Feather name="log-out" size={18} color={COLORS.error} />
               <Text style={styles.logoutText}>Log Out</Text>
             </TouchableOpacity>
           </View>
@@ -393,9 +365,9 @@ const styles = StyleSheet.create({
     marginBottom: SPACING.s,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 20, // Squircle
+    width: 56,
+    height: 56,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -403,7 +375,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: 'white',
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
     fontFamily: FONTS.bold,
   },
@@ -416,40 +388,39 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.text,
     marginBottom: 2,
-    letterSpacing: 0.3,
   },
   userEmail: {
     fontSize: 12,
     color: COLORS.textLight,
-    marginBottom: 8,
   },
   orgName: {
     fontSize: 13,
     color: COLORS.primary,
     fontWeight: '600',
     marginBottom: 2,
-    opacity: 0.9,
   },
   roleBadge: {
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    backgroundColor: COLORS.surface,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 8,
+    borderRadius: 6,
     alignSelf: 'flex-start',
+    position: 'absolute',
+    top: 0,
+    right: 20,
+    ...SHADOWS.soft,
   },
   roleText: {
     fontSize: 10,
     color: COLORS.primary,
     fontWeight: '700',
-    letterSpacing: 0.5,
   },
   contentContainer: {
     flex: 1,
     backgroundColor: 'white',
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30, // Create floating panel effect
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     ...SHADOWS.medium,
-    paddingTop: 20,
     overflow: 'hidden',
   },
   menuContainer: {
@@ -461,14 +432,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 14,
     paddingHorizontal: 16,
-    borderRadius: 16,
-    marginBottom: 6,
+    borderRadius: 14,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   activeMenuItem: {
     backgroundColor: COLORS.primary,
-    ...SHADOWS.soft,
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.3,
+    ...SHADOWS.glow,
   },
   iconContainer: {
     width: 32,
@@ -479,9 +450,10 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   menuLabel: {
-    fontSize: 16,
+    fontSize: 15,
     color: COLORS.textLight,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
   activeMenuLabel: {
     color: 'white',
@@ -503,15 +475,11 @@ const styles = StyleSheet.create({
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     padding: 16,
-    backgroundColor: '#FEF2F2',
+    backgroundColor: COLORS.errorLight,
     borderRadius: 16,
-  },
-  logoutIconWrapper: {
-    marginRight: 12,
-    backgroundColor: '#FEE2E2',
-    padding: 8,
-    borderRadius: 10,
+    gap: 12,
   },
   logoutText: {
     color: COLORS.error,
@@ -519,62 +487,67 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 
-  // Modal (kept similar but cleaned up)
+  // Modals
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: 'rgba(15, 23, 42, 0.6)', // Slate 900 with opacity
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 24,
   },
   modalContent: {
     backgroundColor: 'white',
     borderRadius: 24,
-    padding: 30,
-    alignItems: 'center',
+    padding: 24,
     width: '100%',
-    maxWidth: 340,
-    ...SHADOWS.medium,
+    maxWidth: 360,
+    ...SHADOWS.hard,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '800',
     color: COLORS.text,
-    marginBottom: 0,
+    fontFamily: FONTS.bold,
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: COLORS.textLight,
+    marginBottom: 24,
+  },
+  modalSubtitleCentered: {
+    fontSize: 14,
+    color: COLORS.textLight,
+    marginBottom: 24,
     textAlign: 'center',
-    flex: 1,
   },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  modalSubtitle: { fontSize: 14, color: COLORS.textLight, marginBottom: 24 },
-  modeBtn: {
-    flexDirection: 'row',
-    backgroundColor: COLORS.primary,
-    width: '100%',
+  logoutIconWrapper: {
+    alignSelf: 'center',
+    marginBottom: 16,
+    backgroundColor: COLORS.errorLight,
     padding: 16,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    gap: 12,
-    ...SHADOWS.soft,
+    borderRadius: 50,
   },
-  modeBtnText: { color: 'white', fontSize: 16, fontWeight: '700' },
+  modalActionRow: {
+    flexDirection: 'row',
+    marginTop: 8,
+  },
   badgeContainer: {
     backgroundColor: COLORS.error,
-    borderRadius: 10,
-    paddingHorizontal: 6,
+    borderRadius: 12,
+    paddingHorizontal: 8,
     paddingVertical: 2,
-    marginLeft: 8,
+    marginLeft: 'auto',
+    marginRight: 12,
   },
   badgeText: {
     color: 'white',
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 'bold',
   },
 });

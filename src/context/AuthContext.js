@@ -50,15 +50,10 @@ export const AuthProvider = ({ children }) => {
       ) {
         const orgs = response.data.my_organizations;
 
-        // DEBUG LOGGING
-        console.log('Validating Plan. CurrentOrgId:', currentOrgId);
-        console.log('User Data Org Name:', userData.organization_name);
-
         const currentOrg = orgs.find(o => o.organization_id == currentOrgId);
         let isCurrentPlanActive = false;
 
         if (currentOrg) {
-          console.log('Current Org Found:', currentOrg.organization_name);
           if (currentOrg.hasOwnProperty('is_plan_active')) {
             isCurrentPlanActive =
               currentOrg.is_plan_active === true ||
@@ -67,19 +62,13 @@ export const AuthProvider = ({ children }) => {
             isCurrentPlanActive = true;
           }
         } else {
-          console.log('Current Org NOT FOUND in API response');
         }
 
         if (isCurrentPlanActive) {
-          console.log('Plan is Active. Checking name consistency...');
           if (
             currentOrg.organization_name &&
             userData.organization_name !== currentOrg.organization_name
           ) {
-            console.log(
-              'Name Mismatch Detected! Updating to:',
-              currentOrg.organization_name,
-            );
             const updatedWithNames = {
               ...userData,
               organization_name: currentOrg.organization_name,
@@ -95,13 +84,11 @@ export const AuthProvider = ({ children }) => {
           return;
         }
 
-        console.log('Plan inactive. Attempting auto-switch...');
         const activeOrg = orgs.find(
           o => o.is_plan_active === true || o.is_plan_active === 1,
         );
 
         if (activeOrg) {
-          console.log('Auto-switching to:', activeOrg.organization_name);
           const updatedUser = {
             ...userData,
             organization_id: activeOrg.organization_id,
@@ -127,17 +114,14 @@ export const AuthProvider = ({ children }) => {
             console.error('Auto-switch Org Save Error', e);
           }
         } else {
-          console.log('No active plans found. Auto-logging out.');
           await logout();
         }
       } else {
-        console.log('No organizations found. Auto-logging out.');
         await logout();
       }
     } catch (e) {
       console.log('Plan Validation Failed', e);
       if (e.response && e.response.status === 401) {
-        console.log('Token expired or invalid. Auto-logging out.');
         await logout();
       }
     }

@@ -10,7 +10,8 @@ import { COLORS, SPACING, SHADOWS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import Feather from 'react-native-vector-icons/Ionicons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 const AssetRegisterSelectionScreen = ({ navigation, route }) => {
   const { organizationId, isForAssignment } = route.params || {};
@@ -59,7 +60,7 @@ const AssetRegisterSelectionScreen = ({ navigation, route }) => {
     >
       <View style={styles.cardContent}>
         <View style={styles.iconContainer}>
-          <Icon name="book-open-variant" size={24} color={COLORS.primary} />
+          <Feather name="book-outline" size={24} color={COLORS.primary} />
         </View>
         <View style={styles.textContainer}>
           <Text style={styles.title}>{item.name}</Text>
@@ -69,7 +70,11 @@ const AssetRegisterSelectionScreen = ({ navigation, route }) => {
             </Text>
           ) : null}
         </View>
-        <Icon name="chevron-right" size={24} color={COLORS.textLight} />
+        <Ionicons
+          name="chevron-forward-outline"
+          size={24}
+          color={COLORS.textLight}
+        />
       </View>
     </TouchableOpacity>
   );

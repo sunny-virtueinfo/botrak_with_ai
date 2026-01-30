@@ -4,14 +4,15 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Alert,
   Modal,
   TextInput,
   TouchableOpacity,
+  Pressable,
 } from 'react-native';
+import Feather from 'react-native-vector-icons/Feather';
 import { COLORS, SPACING, SHADOWS, FONTS } from '../../theme';
-import GradientButton from '../../components/premium/GradientButton';
-import GlassCard from '../../components/premium/GlassCard';
+import Button from '../../components/common/Button';
+import Card from '../../components/common/Card';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import { useApiService } from '../../services/ApiService';
 import { useCustomModal } from '../../context/ModalContext';
@@ -30,8 +31,9 @@ const AssetDetailScreen = ({ route, navigation }) => {
       onPress={() =>
         navigation.navigate('UpdateAsset', { asset, organizationId })
       }
+      style={styles.editBtn}
     >
-      <Text style={{ color: COLORS.primary, fontWeight: 'bold' }}>Edit</Text>
+      <Feather name="edit-2" size={20} color={COLORS.primary} />
     </TouchableOpacity>
   );
 
@@ -92,11 +94,12 @@ const AssetDetailScreen = ({ route, navigation }) => {
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Header Image Placeholder */}
         <View style={styles.imageContainer}>
-          <Text style={styles.placeholderText}>{asset.name?.charAt(0)}</Text>
+          <Feather name="box" size={64} color={COLORS.primary} />
+          <Text style={styles.placeholderText}>{asset.name}</Text>
         </View>
 
         {/* Info Card */}
-        <GlassCard style={styles.infoCard}>
+        <Card variant="elevated" style={styles.infoCard}>
           <View style={styles.headerRow}>
             <Text style={styles.assetName}>{asset.name}</Text>
             <View
@@ -105,52 +108,81 @@ const AssetDetailScreen = ({ route, navigation }) => {
                 {
                   backgroundColor:
                     asset.status === 'available'
-                      ? COLORS.secondary
-                      : COLORS.primary,
+                      ? COLORS.success + '20'
+                      : COLORS.warning + '20',
                 },
               ]}
             >
-              <Text style={styles.badgeText}>
+              <Text
+                style={[
+                  styles.badgeText,
+                  {
+                    color:
+                      asset.status === 'available'
+                        ? COLORS.success
+                        : COLORS.warning,
+                  },
+                ]}
+              >
                 {asset.status?.toUpperCase()}
               </Text>
             </View>
           </View>
 
-          <Text style={styles.label}>QR Code</Text>
-          <Text style={styles.value}>{asset.qr_code}</Text>
+          <View style={styles.detailItem}>
+            <Text style={styles.label}>QR Code</Text>
+            <Text style={styles.value}>{asset.qr_code}</Text>
+          </View>
 
-          <Text style={styles.label}>Location</Text>
-          <Text style={styles.value}>
-            {asset.location_id || 'Unknown'} (Plant {asset.plant_id || 'N/A'})
-          </Text>
+          <View style={styles.detailItem}>
+            <Text style={styles.label}>Location</Text>
+            <Text style={styles.value}>
+              {asset.location_id || 'Unknown'}{' '}
+              <Text style={styles.subValue}>
+                (Plant {asset.plant_id || 'N/A'})
+              </Text>
+            </Text>
+          </View>
 
-          <Text style={styles.label}>Synced At</Text>
-          <Text style={styles.value}>
-            {new Date(asset.synced_at).toLocaleString()}
-          </Text>
-        </GlassCard>
+          <View style={styles.detailItem}>
+            <Text style={styles.label}>Last Synced</Text>
+            <Text style={styles.value}>
+              {new Date(asset.synced_at).toLocaleString()}
+            </Text>
+          </View>
+        </Card>
       </ScrollView>
 
       {/* Action Footer */}
       <View style={styles.footer}>
         {(asset.checkin_checkout || '').toLowerCase() === 'checkout' ? (
-          <GradientButton
-            title="Check In"
-            colors={COLORS.gradients.success}
+          <Button
+            title="Check In Asset"
+            variant="primary"
             onPress={() => handleAction('checkin')}
+            style={styles.actionBtn}
+            icon="log-in"
           />
         ) : (
-          <GradientButton
-            title="Check Out"
+          <Button
+            title="Check Out Asset"
+            variant="secondary"
             onPress={() => handleAction('checkout')}
+            style={styles.actionBtn}
+            icon="log-out"
           />
         )}
       </View>
 
       {/* Action Modal */}
-      <Modal animationType="slide" transparent={true} visible={modalVisible}>
+      <Modal animationType="fade" transparent={true} visible={modalVisible}>
         <View style={styles.modalOverlay}>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => setModalVisible(false)}
+          />
           <View style={styles.modalContent}>
+            <View style={styles.modalHandle} />
             <Text style={styles.modalTitle}>
               {actionType === 'checkin' ? 'Check In Asset' : 'Check Out Asset'}
             </Text>
@@ -159,28 +191,31 @@ const AssetDetailScreen = ({ route, navigation }) => {
               <TextInput
                 style={styles.input}
                 placeholder="Assign to (User ID/Name)"
+                placeholderTextColor={COLORS.textPlaceholder}
                 value={assignee}
                 onChangeText={setAssignee}
               />
             )}
 
             <TextInput
-              style={[styles.input, { height: 80 }]}
-              placeholder="Notes (Optional)"
+              style={[styles.input, { height: 100, textAlignVertical: 'top' }]}
+              placeholder="Add notes (Optional)"
+              placeholderTextColor={COLORS.textPlaceholder}
               multiline
               value={notes}
               onChangeText={setNotes}
             />
 
             <View style={styles.modalButtons}>
-              <GradientButton
+              <Button
                 title="Cancel"
+                variant="ghost"
                 onPress={() => setModalVisible(false)}
                 style={styles.modalBtn}
-                colors={['#9CA3AF', '#6B7280']}
               />
-              <GradientButton
+              <Button
                 title="Confirm"
+                variant="primary"
                 onPress={confirmAction}
                 style={styles.modalBtn}
               />
@@ -194,65 +229,127 @@ const AssetDetailScreen = ({ route, navigation }) => {
 
 const styles = StyleSheet.create({
   scroll: { padding: SPACING.m, paddingBottom: 100 },
+  editBtn: {
+    padding: 8,
+  },
   imageContainer: {
-    height: 200,
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    height: 180,
+    backgroundColor: COLORS.surfaceHighlight,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 16,
+    borderRadius: 24,
     marginBottom: SPACING.m,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  placeholderText: { fontSize: 80, color: COLORS.primary, fontWeight: 'bold' },
-  infoCard: { marginBottom: 20 },
+  placeholderText: {
+    fontSize: 18,
+    color: COLORS.primary,
+    fontWeight: 'bold',
+    marginTop: 12,
+    fontFamily: FONTS.bold,
+  },
+  infoCard: {
+    padding: SPACING.l,
+    borderRadius: 20,
+  },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: SPACING.l,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    paddingBottom: SPACING.m,
   },
-  assetName: { fontSize: 24, fontWeight: 'bold', color: COLORS.text, flex: 1 },
-  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  badgeText: { color: 'white', fontWeight: 'bold', fontSize: 12 },
-  label: { color: COLORS.textLight, fontSize: 12, marginTop: SPACING.m },
-  value: { color: COLORS.text, fontSize: 16, fontWeight: '500' },
+  assetName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    flex: 1,
+    fontFamily: FONTS.bold,
+  },
+  badge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  badgeText: { fontWeight: 'bold', fontSize: 12 },
+
+  detailItem: { marginBottom: SPACING.m },
+  label: {
+    color: COLORS.textLight,
+    fontSize: 13,
+    marginBottom: 4,
+    fontFamily: FONTS.medium,
+  },
+  value: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: FONTS.semiBold,
+  },
+  subValue: {
+    color: COLORS.textLight,
+    fontSize: 14,
+    fontWeight: 'normal',
+  },
+
   footer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#fff',
+    backgroundColor: COLORS.surface,
     padding: SPACING.l,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     paddingBottom: SPACING.xl,
+    ...SHADOWS.top,
   },
+  actionBtn: {
+    width: '100%',
+  },
+
+  // Modal
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    padding: SPACING.l,
+    backgroundColor: 'rgba(15, 23, 42, 0.7)',
+    justifyContent: 'flex-end',
+    zIndex: 1000,
   },
   modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 16,
+    backgroundColor: COLORS.surface,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
     padding: SPACING.l,
+    paddingBottom: SPACING.xl + 20,
+    ...SHADOWS.hard,
+  },
+  modalHandle: {
+    width: 48,
+    height: 5,
+    backgroundColor: COLORS.border,
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginBottom: SPACING.l,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '800',
     marginBottom: SPACING.l,
     textAlign: 'center',
+    color: COLORS.text,
+    fontFamily: FONTS.bold,
   },
   input: {
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderRadius: 8,
+    borderRadius: 12,
     padding: SPACING.m,
     marginBottom: SPACING.m,
     color: COLORS.text,
+    backgroundColor: COLORS.inputBackground,
+    fontSize: 16,
   },
-  modalButtons: { flexDirection: 'row', justifyContent: 'space-between' },
-  modalBtn: { flex: 1, marginHorizontal: 5 },
+  modalButtons: { flexDirection: 'row', gap: 12, marginTop: 12 },
+  modalBtn: { flex: 1 },
 });
 
 export default AssetDetailScreen;

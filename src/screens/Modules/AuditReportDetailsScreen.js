@@ -6,15 +6,15 @@ import {
   FlatList,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
 } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
+import LinearGradient from 'react-native-linear-gradient';
+import * as Animatable from 'react-native-animatable';
 import { COLORS, SPACING, SHADOWS, FONTS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
-import GlassCard from '../../components/premium/GlassCard';
+import Card from '../../components/common/Card';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
-
 import CustomDropDown from '../../components/common/CustomDropDown';
 
 const FILTERS = {
@@ -135,7 +135,7 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
 
         const responseKey = apiMap[activeTab];
         const res = await api.getAuditReports(organizationId, auditId, body);
-        console.log('res', res);
+
         if (res.data && res.data.success) {
           const resultData = res.data[responseKey] || [];
           if (resultData.length === 0) {
@@ -153,7 +153,7 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
         }
       } catch (e) {
         console.error('Fetch error:', e);
-        setHasMore(false); // Stop fetching on error
+        setHasMore(false);
       } finally {
         setLoading(false);
       }
@@ -183,133 +183,143 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
     return String(str).replace(/\b\w/g, l => l.toUpperCase());
   };
 
-  const renderItem = ({ item }) => (
-    <GlassCard style={styles.card}>
-      <View style={styles.row}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.itemName}>
-            {item.asset_code || item.name || 'Unknown Asset'}
-          </Text>
-          {item.location_name && (
-            <Text style={styles.subText}>Main Loc: {item.location_name}</Text>
-          )}
-          {item.current_location_name && (
-            <Text style={styles.subText}>
-              Current Loc: {item.current_location_name}
+  const renderItem = ({ item, index }) => (
+    <Animatable.View
+      animation="fadeInUp"
+      duration={600}
+      delay={index * 100}
+      useNativeDriver
+    >
+      <Card variant="elevated" style={styles.card}>
+        <View style={styles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.itemName}>
+              {item.asset_code || item.name || 'Unknown Asset'}
             </Text>
-          )}
-          {item.user_name && (
-            <Text style={styles.subText}>User: {item.user_name}</Text>
-          )}
-        </View>
-        <View style={{ alignItems: 'flex-end', maxWidth: '40%' }}>
-          {(() => {
-            let valueToShow = item.found;
-            let displayLabel = item.found;
+            {item.location_name && (
+              <Text style={styles.subText}>Main Loc: {item.location_name}</Text>
+            )}
+            {item.current_location_name && (
+              <Text style={styles.subText}>
+                Current Loc: {item.current_location_name}
+              </Text>
+            )}
+            {item.user_name && (
+              <Text style={styles.subText}>User: {item.user_name}</Text>
+            )}
+          </View>
+          <View style={{ alignItems: 'flex-end', maxWidth: '40%' }}>
+            {(() => {
+              let valueToShow = item.found;
+              let displayLabel = item.found;
 
-            switch (activeTab) {
-              case 'case2': // Condition
-                valueToShow = item.condition;
-                displayLabel = item.condition;
-                break;
-              case 'case3': // Usage
-              case 'case5': // Not Found -> Usage
-                valueToShow = item.usage;
-                displayLabel = item.usage;
-                break;
-              case 'case4': // New -> Asset Type
-                valueToShow = item.asset_type;
-                displayLabel = item.asset_type;
-                break;
-              case 'case1':
-              default:
-                valueToShow = item.found;
-                displayLabel =
-                  item.found || (item.count !== undefined ? item.count : 'N/A');
-                break;
-            }
+              switch (activeTab) {
+                case 'case2': // Condition
+                  valueToShow = item.condition;
+                  displayLabel = item.condition;
+                  break;
+                case 'case3': // Usage
+                case 'case5': // Not Found -> Usage
+                  valueToShow = item.usage;
+                  displayLabel = item.usage;
+                  break;
+                case 'case4': // New -> Asset Type
+                  valueToShow = item.asset_type;
+                  displayLabel = item.asset_type;
+                  break;
+                case 'case1':
+                default:
+                  valueToShow = item.found;
+                  displayLabel =
+                    item.found ||
+                    (item.count !== undefined ? item.count : 'N/A');
+                  break;
+              }
 
-            if (!valueToShow && activeTab !== 'case1') return null;
+              if (!valueToShow && activeTab !== 'case1') return null;
 
-            return (
-              <View
-                style={[
-                  styles.badge,
-                  {
-                    backgroundColor: COLORS.success + '20',
-                  },
-                ]}
-              >
-                <Text
+              return (
+                <View
                   style={[
-                    styles.badgeText,
+                    styles.badge,
                     {
-                      color: COLORS.success,
+                      backgroundColor: COLORS.success + '20',
                     },
                   ]}
-                  numberOfLines={1}
                 >
-                  {capitalize(displayLabel)}
-                </Text>
-              </View>
-            );
-          })()}
+                  <Text
+                    style={[
+                      styles.badgeText,
+                      {
+                        color: COLORS.success,
+                      },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {capitalize(displayLabel)}
+                  </Text>
+                </View>
+              );
+            })()}
+          </View>
         </View>
-      </View>
 
-      <View style={styles.divider} />
+        <View style={styles.divider} />
 
-      <View style={styles.detailsRow}>
-        {item.asset_type && (
-          <View style={[styles.detailItem]}>
-            <Feather name="box" size={12} color={COLORS.textLight} />
-            <Text style={styles.detailText}>{capitalize(item.asset_type)}</Text>
-          </View>
-        )}
-        {item.condition && (
-          <View style={[styles.detailItem]}>
-            <Feather name="activity" size={12} color={COLORS.textLight} />
-            <Text style={styles.detailText}>
-              Condition: {capitalize(item.condition)}
-            </Text>
-          </View>
-        )}
-        {item.usage && (
-          <View style={[styles.detailItem]}>
-            <Feather name="clock" size={12} color={COLORS.textLight} />
-            <Text style={styles.detailText}>
-              Usage: {capitalize(item.usage)}
-            </Text>
-          </View>
-        )}
-        {item.qr_scan !== undefined && (
-          <View style={[styles.detailItem]}>
-            <Feather name="settings" size={12} color={COLORS.textLight} />
-            <Text style={styles.detailText}>
-              Mode: {item.qr_scan ? 'QR Scanning' : 'Manual'}
-            </Text>
-          </View>
-        )}
-        {item.updated_at && (
-          <View style={[styles.detailItem]}>
-            <Feather name="calendar" size={12} color={COLORS.textLight} />
-            <Text style={styles.detailText}>
-              Updated:{' '}
-              {item.updated_at
-                ? format(new Date(item.updated_at), 'dd-MM-yyyy')
-                : ''}
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {item.remark ? (
-        <View style={styles.remarkContainer}>
-          <Text style={styles.remarkLabel}>Remark:</Text>
-          <Text style={styles.remark}>{item.remark}</Text>
+        <View style={styles.detailsRow}>
+          {item.asset_type && (
+            <View style={[styles.detailItem]}>
+              <Feather name="box" size={12} color={COLORS.textLight} />
+              <Text style={styles.detailText}>
+                {capitalize(item.asset_type)}
+              </Text>
+            </View>
+          )}
+          {item.condition && (
+            <View style={[styles.detailItem]}>
+              <Feather name="activity" size={12} color={COLORS.textLight} />
+              <Text style={styles.detailText}>
+                Condition: {capitalize(item.condition)}
+              </Text>
+            </View>
+          )}
+          {item.usage && (
+            <View style={[styles.detailItem]}>
+              <Feather name="clock" size={12} color={COLORS.textLight} />
+              <Text style={styles.detailText}>
+                Usage: {capitalize(item.usage)}
+              </Text>
+            </View>
+          )}
+          {item.qr_scan !== undefined && (
+            <View style={[styles.detailItem]}>
+              <Feather name="settings" size={12} color={COLORS.textLight} />
+              <Text style={styles.detailText}>
+                Mode: {item.qr_scan ? 'QR Scanning' : 'Manual'}
+              </Text>
+            </View>
+          )}
+          {item.updated_at && (
+            <View style={[styles.detailItem]}>
+              <Feather name="calendar" size={12} color={COLORS.textLight} />
+              <Text style={styles.detailText}>
+                Updated:{' '}
+                {item.updated_at
+                  ? format(new Date(item.updated_at), 'dd-MM-yyyy')
+                  : ''}
+              </Text>
+            </View>
+          )}
         </View>
-      ) : null}
-    </GlassCard>
+
+        {item.remark ? (
+          <View style={styles.remarkContainer}>
+            <Text style={styles.remarkLabel}>Remark:</Text>
+            <Text style={styles.remark}>{item.remark}</Text>
+          </View>
+        ) : null}
+      </Card>
+    </Animatable.View>
   );
 
   return (
@@ -325,21 +335,32 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
           data={TABS}
           keyExtractor={item => item.id}
           contentContainerStyle={{ paddingHorizontal: SPACING.m }}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[styles.tab, activeTab === item.id && styles.activeTab]}
-              onPress={() => setActiveTab(item.id)}
-            >
-              <Text
-                style={[
-                  styles.tabText,
-                  activeTab === item.id && styles.activeTabText,
-                ]}
+          renderItem={({ item }) => {
+            const isActive = activeTab === item.id;
+            return (
+              <TouchableOpacity
+                onPress={() => setActiveTab(item.id)}
+                activeOpacity={0.7}
               >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          )}
+                {isActive ? (
+                  <LinearGradient
+                    colors={COLORS.gradients.primary}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={[styles.tab, styles.activeTabGradient]}
+                  >
+                    <Text style={[styles.tabText, styles.activeTabText]}>
+                      {item.label}
+                    </Text>
+                  </LinearGradient>
+                ) : (
+                  <View style={styles.tab}>
+                    <Text style={styles.tabText}>{item.label}</Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          }}
         />
       </View>
 
@@ -368,7 +389,11 @@ const AuditReportDetailsScreen = ({ route, navigation }) => {
         }}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
-          !loading && <Text style={styles.emptyText}>No data found.</Text>
+          !loading && (
+            <View style={{ alignItems: 'center', marginTop: 40 }}>
+              <Text style={styles.emptyText}>No data found.</Text>
+            </View>
+          )
         }
         ListFooterComponent={
           loading && <Loader visible={true} size="small" overlay={false} />
@@ -392,22 +417,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     justifyContent: 'center',
+    height: 40,
   },
-  activeTab: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+  activeTabGradient: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
   },
   tabText: {
     color: COLORS.textLight,
     fontWeight: '600',
+    fontFamily: FONTS.medium,
   },
   activeTabText: {
     color: 'white',
   },
   filterContainer: {
     paddingHorizontal: SPACING.m,
-    marginBottom: SPACING.m,
-    zIndex: 100, // Ensure dropdown overlays list
+    marginBottom: SPACING.s,
+    zIndex: 100,
   },
   dropdownBtn: {
     backgroundColor: 'white',
@@ -415,19 +442,21 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderWidth: 1,
     borderColor: COLORS.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 12,
   },
-  listContent: { padding: SPACING.m },
+  listContent: { padding: SPACING.m, paddingBottom: 100 },
   card: { marginBottom: SPACING.m, padding: SPACING.m },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  itemName: { fontSize: 16, fontWeight: 'bold', color: COLORS.text },
+  itemName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    fontFamily: FONTS.bold,
+  },
   badge: {
     backgroundColor: COLORS.primary + '20',
     paddingHorizontal: 8,
@@ -435,19 +464,29 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   badgeText: { color: COLORS.primary, fontWeight: 'bold', fontSize: 12 },
-  subText: { fontSize: 12, color: COLORS.textLight, marginTop: 2 },
+  subText: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    marginTop: 2,
+    fontFamily: FONTS.regular,
+  },
   detailsRow: { flexDirection: 'row', marginTop: 10, flexWrap: 'wrap' },
   detailItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 10,
-    marginBottom: 6, // Add margin bottom for improved wrapping
-    backgroundColor: COLORS.surface,
+    marginBottom: 6,
+    backgroundColor: COLORS.surfaceHighlight,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
   },
-  detailText: { fontSize: 11, color: COLORS.text, marginLeft: 4 },
+  detailText: {
+    fontSize: 11,
+    color: COLORS.text,
+    marginLeft: 4,
+    fontFamily: FONTS.medium,
+  },
   divider: { height: 1, backgroundColor: COLORS.border, marginVertical: 10 },
   remarkContainer: {
     marginTop: 10,

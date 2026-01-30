@@ -15,6 +15,7 @@ import GlassCard from '../../components/premium/GlassCard';
 import GradientButton from '../../components/premium/GradientButton';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
+import Button from '../../components/common/Button';
 
 const AssetAssignmentDetailScreen = ({ route, navigation }) => {
   const { scannedAsset, organizationId } = route.params;
@@ -182,28 +183,23 @@ const AssetAssignmentDetailScreen = ({ route, navigation }) => {
               multiline
             />
             <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.cancelBtn]}
-                onPress={() => setUnassignModalVisible(false)}
-              >
-                <Text style={styles.btnTextBlack}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.confirmBtn]}
-                onPress={handleUnassignConfirm}
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <Loader
-                    visible={true}
-                    size="small"
-                    color="white"
-                    overlay={false}
-                  />
-                ) : (
-                  <Text style={styles.btnTextWhite}>Confirm Unassign</Text>
-                )}
-              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Button
+                  title="Cancel"
+                  variant="neutral"
+                  onPress={() => setUnassignModalVisible(false)}
+                  style={{ width: '100%' }}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button
+                  title="Confirm Unassign"
+                  variant="danger"
+                  onPress={handleUnassignConfirm}
+                  loading={submitting}
+                  style={{ width: '100%' }}
+                />
+              </View>
             </View>
           </View>
         </View>
@@ -290,11 +286,17 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     marginBottom: 20,
   },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
-  modalBtn: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
-  cancelBtn: { backgroundColor: COLORS.gradients.background[0] },
-  confirmBtn: { backgroundColor: COLORS.error },
-  btnTextBlack: { color: COLORS.text, fontWeight: 'bold' },
+  modalActions: { flexDirection: 'row', gap: 12, marginTop: 10 },
+  activeTabText: { color: COLORS.primary },
+  iconBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.m,
+    alignSelf: 'center',
+  },
 });
 
 export default AssetAssignmentDetailScreen;

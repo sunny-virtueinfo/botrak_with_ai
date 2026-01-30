@@ -164,9 +164,7 @@ const CheckInOrOutScreen = () => {
 
   const fetchLocations = async (pId, isInitialLoad = false) => {
     try {
-      console.log('pId', pId);
       const res = await api.getLocations(organizationId || undefined, pId);
-      console.log('res', res);
       if (res.data && res.data.success) {
         setLocations(res.data.locations || []);
 
@@ -385,10 +383,11 @@ const CheckInOrOutScreen = () => {
               <LinearGradient
                 colors={COLORS.gradients.primary}
                 style={{
-                  borderRadius: 10,
-                  padding: 15,
+                  borderRadius: 16,
+                  padding: 16,
                   alignItems: 'center',
                   width: '100%',
+                  ...SHADOWS.medium,
                 }}
               >
                 <Text style={theme.buttonText}>
@@ -409,10 +408,12 @@ const styles = StyleSheet.create({
   scrollContent: { padding: SPACING.m },
   card: {
     backgroundColor: COLORS.surface,
-    borderRadius: 12,
+    borderRadius: 16, // More rounded
     padding: SPACING.m,
-    marginBottom: SPACING.s,
-    ...SHADOWS.soft,
+    marginBottom: SPACING.m,
+    ...SHADOWS.medium, // Better depth
+    borderWidth: 1,
+    borderColor: 'rgba(226, 232, 240, 0.4)', // subtle border
   },
   row: {
     flexDirection: 'row',
@@ -480,7 +481,7 @@ const styles = StyleSheet.create({
   modalItem: {
     paddingVertical: 15,
     borderBottomWidth: 1,
-    borderBottomColor: COLORS.gradients.background[0],
+    borderBottomColor: COLORS.border,
   },
   modalItemText: {
     fontSize: 16,

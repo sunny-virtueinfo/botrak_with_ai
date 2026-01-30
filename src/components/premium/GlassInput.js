@@ -59,18 +59,18 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.6)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.8)',
+    backgroundColor: COLORS.surface, // Cleaner look
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
     paddingHorizontal: SPACING.m,
-    height: 50,
+    height: 56, // Taller touch target
     ...SHADOWS.soft,
   },
   inputFocused: {
-    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    backgroundColor: COLORS.surface,
     borderColor: COLORS.primary,
-    ...SHADOWS.medium,
+    ...SHADOWS.glow,
   },
   icon: {
     marginRight: 10,

@@ -2,22 +2,21 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  TextInput,
   StyleSheet,
   TouchableOpacity,
   Alert,
   Modal,
-  FlatList,
-  Platform,
-  ActionSheetIOS,
   Image,
+  Platform,
   PermissionsAndroid,
 } from 'react-native';
 import { launchCamera } from 'react-native-image-picker';
-import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { COLORS, SPACING, SHADOWS } from '../../theme';
+import Feather from 'react-native-vector-icons/Feather';
+import { COLORS, SPACING, FONTS, SHADOWS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
-import GradientButton from '../../components/premium/GradientButton';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
+import Card from '../../components/common/Card';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import { useToast } from '../../context/ToastContext';
 import { useCustomModal } from '../../context/ModalContext';
@@ -77,6 +76,12 @@ const UpdateAssetScreen = ({ route, navigation }) => {
   const [deletedImageIds, setDeletedImageIds] = useState([]);
   const [newImages, setNewImages] = useState([]);
 
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    loadInitialData();
+  }, []);
+
   const checkPermissionForEditImage = async () => {
     try {
       if (Platform.OS === 'android') {
@@ -113,9 +118,7 @@ const UpdateAssetScreen = ({ route, navigation }) => {
         saveToPhotos: false,
       });
 
-      if (result.didCancel) {
-        return;
-      }
+      if (result.didCancel) return;
 
       if (result.errorCode) {
         showToast(result.errorMessage || 'Camera error', 'error');
@@ -129,13 +132,10 @@ const UpdateAssetScreen = ({ route, navigation }) => {
             ...capturedImage,
             tempId: Date.now().toString(),
           };
-          const updatedImages = [...newImages, imageWithId];
-          setNewImages(updatedImages);
+          setNewImages([...newImages, imageWithId]);
         } else {
           showToast('Failed to capture image', 'error');
         }
-      } else {
-        console.log('No assets found in camera result');
       }
     } catch (error) {
       console.log('Camera catch error', error);
@@ -147,12 +147,6 @@ const UpdateAssetScreen = ({ route, navigation }) => {
   const handleRemoveNewImage = tempId => {
     setNewImages(prev => prev.filter(img => img.tempId !== tempId));
   };
-
-  const [errors, setErrors] = useState({});
-
-  useEffect(() => {
-    loadInitialData();
-  }, []);
 
   const loadInitialData = async () => {
     setIsLoading(true);
@@ -382,232 +376,234 @@ const UpdateAssetScreen = ({ route, navigation }) => {
       scrollable={true}
       contentContainerStyle={styles.scrollContent}
     >
-      <View style={styles.section}>
-        <View style={styles.rowLabel}>
-          <Text style={styles.label}>Asset Code</Text>
-          <Text style={styles.star}> *</Text>
-        </View>
-        <TextInput
-          style={[styles.input, errors.assetCode && styles.inputError]}
-          value={assetCode}
-          onChangeText={setAssetCode}
-          placeholder="Enter Asset Code"
-        />
-      </View>
-
-      <View style={styles.section}>
-        <View style={styles.rowLabel}>
-          <Text style={styles.label}>Asset Type</Text>
-          <Text style={styles.star}> *</Text>
-        </View>
-        <TextInput
-          style={[styles.input, errors.assetType && styles.inputError]}
-          value={assetType}
-          onChangeText={setAssetType}
-          placeholder="Enter Asset Type"
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.label}>Supplier Name</Text>
-        <TextInput
-          style={styles.input}
-          value={supplierName}
-          onChangeText={setSupplierName}
-          placeholder="Supplier Name"
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.label}>Installation Date (YYYY-MM-DD)</Text>
-        <TextInput
-          style={styles.input}
-          value={installationDate}
-          onChangeText={setInstallationDate}
-          placeholder="2023-01-01"
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.label}>Description</Text>
-        <TextInput
-          style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
-          value={description}
-          onChangeText={setDescription}
-          multiline
-          numberOfLines={3}
-          placeholder="Details about asset"
-        />
-      </View>
-
-      <View style={styles.section}>
-        <View style={styles.rowLabel}>
-          <Text style={styles.label}>Life of Asset (Years)</Text>
-          <Text style={styles.star}> *</Text>
-        </View>
-        <TextInput
-          style={[styles.input, errors.lifeOfAsset && styles.inputError]}
-          value={lifeOfAsset}
-          onChangeText={setLifeOfAsset}
-          keyboardType="numeric"
-          placeholder="0"
-        />
-      </View>
-
-      {/* Dropdowns */}
-      <View style={styles.section}>
-        <View style={styles.rowLabel}>
-          <Text style={styles.label}>Plant</Text>
-          <Text style={styles.star}> *</Text>
-        </View>
-        <NewPickerForPlant
-          plants={plants}
-          selected={selectedPlant}
-          valueChange={handlePlantChange}
-          error={errors.plant}
-          pickerStyle={styles.dropdownBtn}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <View style={styles.rowLabel}>
-          <Text style={styles.label}>Asset Register</Text>
-          <Text style={styles.star}> *</Text>
-        </View>
-        <CustomDropDown
-          label="Select Register"
-          data={assetRegisters}
-          value={selectedAssetRegister}
-          onValueChange={val => setSelectedAssetRegister(val?.id ?? val)}
-          placeholder="Select Asset Register"
-          error={errors.register}
-          style={styles.dropdownBtn}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <View style={styles.rowLabel}>
-          <Text style={styles.label}>Location</Text>
-          <Text style={styles.star}> *</Text>
-        </View>
-        <NewLocationPicker
-          locations={locations}
-          selected={selectedLocation}
-          valueChange={val => setSelectedLocation(val?.id || val)}
-          error={errors.location}
-          pickerStyle={styles.dropdownBtn}
-        />
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.label}>Sub Location</Text>
-        <TextInput
-          style={[styles.input, { height: 60 }]}
-          value={subLocation}
-          onChangeText={setSubLocation}
-          multiline
-          placeholder="e.g. Corner desk"
-        />
-      </View>
-
-      <View style={styles.section}>
-        <View style={styles.row}>
-          <View style={{ flex: 1, marginRight: 10 }}>
-            <Text style={styles.label}>Condition</Text>
-            <CustomDropDown
-              label="Condition"
-              data={CONSTANT_CONDITION}
-              value={condition}
-              onValueChange={val => setCondition(val?.value ?? val)}
-              style={styles.dropdownBtn}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.label}>Usage</Text>
-            <CustomDropDown
-              label="Usage"
-              data={CONSTANT_USAGE}
-              value={usage}
-              onValueChange={val => setUsage(val?.value ?? val)}
-              style={styles.dropdownBtn}
-            />
-          </View>
-        </View>
-      </View>
-
-      <View style={styles.section}>
-        <TouchableOpacity
-          style={styles.addImageBtn}
-          onPress={handleSelectImage}
-        >
-          <Text style={styles.addImageText}>Add Image</Text>
-        </TouchableOpacity>
-      </View>
-
-      {existingImages.map(img => (
-        <View key={img.image_id} style={styles.imageRow}>
-          <Image
-            source={{ uri: img.image_url || img.uri }}
-            style={styles.thumbnail}
-            resizeMode="cover"
+      <Card variant="elevated" style={styles.card}>
+        <View style={styles.section}>
+          <Input
+            label="Asset Code *"
+            value={assetCode}
+            onChangeText={setAssetCode}
+            placeholder="Enter Asset Code"
+            error={errors.assetCode}
           />
-          <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={{ color: COLORS.text, fontSize: 12 }}>
-              {img.name || 'Existing Image'}
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => handleRemoveExistingImage(img.image_id)}
-            style={styles.removeBtn}
-          >
-            <Text style={styles.removeText}>Remove</Text>
-          </TouchableOpacity>
         </View>
-      ))}
 
-      {newImages.map((img, index) => {
-        if (!img || !img.uri) return null;
-        return (
-          <View key={img.tempId || `new-${index}`} style={styles.imageRow}>
+        <View style={styles.section}>
+          <Input
+            label="Asset Type *"
+            value={assetType}
+            onChangeText={setAssetType}
+            placeholder="Enter Asset Type"
+            error={errors.assetType}
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Input
+            label="Supplier Name"
+            value={supplierName}
+            onChangeText={setSupplierName}
+            placeholder="Supplier Name"
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Input
+            label="Installation Date (YYYY-MM-DD)"
+            value={installationDate}
+            onChangeText={setInstallationDate}
+            placeholder="2023-01-01"
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Input
+            label="Description"
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Details about asset"
+            multiline
+            style={{ height: 80 }}
+          />
+        </View>
+
+        <View style={styles.section}>
+          <Input
+            label="Life of Asset (Years) *"
+            value={lifeOfAsset}
+            onChangeText={setLifeOfAsset}
+            keyboardType="numeric"
+            placeholder="0"
+            error={errors.lifeOfAsset}
+          />
+        </View>
+
+        {/* Dropdowns */}
+        <View style={styles.section}>
+          <View style={styles.rowLabel}>
+            <Text style={styles.label}>Plant *</Text>
+          </View>
+          <NewPickerForPlant
+            plants={plants}
+            selected={selectedPlant}
+            valueChange={handlePlantChange}
+            error={errors.plant}
+            pickerStyle={styles.dropdownBtn}
+          />
+          {errors.plant && <Text style={styles.errorText}>{errors.plant}</Text>}
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.rowLabel}>
+            <Text style={styles.label}>Asset Register *</Text>
+          </View>
+          <CustomDropDown
+            label="Select Register"
+            data={assetRegisters}
+            value={selectedAssetRegister}
+            onValueChange={val => setSelectedAssetRegister(val?.id ?? val)}
+            placeholder="Select Asset Register"
+            error={errors.register}
+            style={styles.dropdownBtn}
+          />
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.rowLabel}>
+            <Text style={styles.label}>Location *</Text>
+          </View>
+          <NewLocationPicker
+            locations={locations}
+            selected={selectedLocation}
+            valueChange={val => setSelectedLocation(val?.id || val)}
+            error={errors.location}
+            pickerStyle={styles.dropdownBtn}
+          />
+          {errors.location && (
+            <Text style={styles.errorText}>{errors.location}</Text>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <Input
+            label="Sub Location"
+            value={subLocation}
+            onChangeText={setSubLocation}
+            placeholder="e.g. Corner desk"
+          />
+        </View>
+
+        <View style={styles.section}>
+          <View style={styles.row}>
+            <View style={{ flex: 1, marginRight: 10 }}>
+              <Text style={styles.label}>Condition</Text>
+              <CustomDropDown
+                label="Condition"
+                data={CONSTANT_CONDITION}
+                value={condition}
+                onValueChange={val => setCondition(val?.value ?? val)}
+                style={styles.dropdownBtn}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.label}>Usage</Text>
+              <CustomDropDown
+                label="Usage"
+                data={CONSTANT_USAGE}
+                value={usage}
+                onValueChange={val => setUsage(val?.value ?? val)}
+                style={styles.dropdownBtn}
+              />
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Button
+            title="Add Image"
+            icon="camera"
+            variant="secondary"
+            onPress={handleSelectImage}
+            style={styles.addImageBtn}
+          />
+        </View>
+
+        {existingImages.map(img => (
+          <View key={img.image_id} style={styles.imageRow}>
             <Image
-              source={{ uri: img.uri }}
+              source={{ uri: img.image_url || img.uri }}
               style={styles.thumbnail}
               resizeMode="cover"
             />
             <View style={{ flex: 1, marginLeft: 10 }}>
-              <Text style={{ color: COLORS.text, fontSize: 12 }}>
-                New Image {index + 1}
+              <Text
+                style={{
+                  color: COLORS.text,
+                  fontSize: 12,
+                  fontFamily: FONTS.medium,
+                }}
+              >
+                {img.name || 'Existing Image'}
               </Text>
             </View>
             <TouchableOpacity
-              onPress={() => handleRemoveNewImage(img.tempId)}
+              onPress={() => handleRemoveExistingImage(img.image_id)}
               style={styles.removeBtn}
             >
-              <Text style={styles.removeText}>Remove</Text>
+              <Feather name="trash-2" size={18} color={COLORS.error} />
             </TouchableOpacity>
           </View>
-        );
-      })}
+        ))}
+
+        {newImages.map((img, index) => {
+          if (!img || !img.uri) return null;
+          return (
+            <View key={img.tempId || `new-${index}`} style={styles.imageRow}>
+              <Image
+                source={{ uri: img.uri }}
+                style={styles.thumbnail}
+                resizeMode="cover"
+              />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text
+                  style={{
+                    color: COLORS.text,
+                    fontSize: 12,
+                    fontFamily: FONTS.medium,
+                  }}
+                >
+                  New Image {index + 1}
+                </Text>
+              </View>
+              <TouchableOpacity
+                onPress={() => handleRemoveNewImage(img.tempId)}
+                style={styles.removeBtn}
+              >
+                <Feather name="trash-2" size={18} color={COLORS.error} />
+              </TouchableOpacity>
+            </View>
+          );
+        })}
+      </Card>
 
       <View style={styles.btnRow}>
-        <GradientButton
-          title={isUpdating ? 'Updating...' : 'Update'}
+        <Button
+          title={isUpdating ? 'Updating...' : 'Update Asset'}
           onPress={handleUpdate}
           disabled={isUpdating || isDeleting}
-          style={{ flex: 1, marginRight: 10 }}
+          variant="primary"
+          style={{ flex: 1 }}
         />
-        <TouchableOpacity
-          style={[
-            styles.delBtn,
-            (isUpdating || isDeleting) && { opacity: 0.5 },
-          ]}
+        <Button
+          title={isDeleting ? 'Deleting...' : 'Delete'}
           onPress={handleDelete}
           disabled={isUpdating || isDeleting}
-        >
-          <Text style={styles.delBtnText}>
-            {isDeleting ? 'Deleting...' : 'Delete'}
-          </Text>
-        </TouchableOpacity>
+          variant="ghost"
+          style={[
+            styles.delBtn,
+            { flex: 0.5, borderColor: COLORS.error, borderWidth: 1 },
+          ]}
+          textStyle={{ color: COLORS.error }}
+        />
       </View>
     </ScreenWrapper>
   );
@@ -615,79 +611,55 @@ const UpdateAssetScreen = ({ route, navigation }) => {
 
 const styles = StyleSheet.create({
   scrollContent: { padding: SPACING.m, paddingBottom: 50 },
+  card: { padding: SPACING.m, borderRadius: 16 },
   section: { marginBottom: SPACING.m },
   rowLabel: { flexDirection: 'row', marginBottom: 6 },
-  label: { fontSize: 13, color: COLORS.textLight, fontWeight: '600' },
-  star: { color: COLORS.error },
-  input: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: SPACING.m,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    color: COLORS.text,
+  label: {
     fontSize: 14,
+    color: COLORS.text,
+    fontWeight: '600',
+    marginBottom: 4,
+    fontFamily: FONTS.semiBold,
   },
   dropdownBtn: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    paddingVertical: 10,
+    backgroundColor: COLORS.inputBackground || COLORS.surface,
+    borderRadius: 12,
+    paddingVertical: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    paddingHorizontal: 12,
   },
-  inputError: { borderColor: COLORS.error },
   row: { flexDirection: 'row' },
-  inputError: { borderColor: COLORS.error },
-  row: { flexDirection: 'row' },
-
-  errorText: { color: COLORS.error, fontSize: 12, marginTop: 4 },
-
-  errorText: { color: COLORS.error, fontSize: 12, marginTop: 4 },
-
-  addImageBtn: {
-    backgroundColor: COLORS.text,
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
+  errorText: {
+    color: COLORS.error,
+    fontSize: 12,
+    marginTop: 4,
+    fontFamily: FONTS.regular,
   },
-  addImageText: { color: 'white', fontWeight: 'bold' },
 
   imageRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 10,
-    borderRadius: 8,
+    backgroundColor: COLORS.surfaceHighlight,
+    padding: 8,
+    borderRadius: 12,
     marginBottom: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
   thumbnail: {
-    width: 60,
-    height: 60,
-    borderRadius: 6,
-    backgroundColor: '#f0f0f0',
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: '#e2e8f0',
   },
   removeBtn: {
-    borderWidth: 1,
-    borderColor: COLORS.text,
-    padding: 6,
-    borderRadius: 6,
+    padding: 8,
   },
-  removeText: { fontSize: 12, fontWeight: 'bold', color: COLORS.text },
-
-  btnRow: { flexDirection: 'row', marginTop: 20 },
+  btnRow: { flexDirection: 'row', marginTop: 24, marginBottom: 40, gap: 10 },
   delBtn: {
-    flex: 1,
-    backgroundColor: COLORS.error,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: 'transparent',
   },
-  delBtnText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
 });
 
 export default UpdateAssetScreen;

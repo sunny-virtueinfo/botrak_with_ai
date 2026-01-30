@@ -1,15 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  RefreshControl,
-} from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import GlassCard from '../../components/premium/GlassCard';
-import GradientButton from '../../components/premium/GradientButton';
+import { View, Text, FlatList, StyleSheet, RefreshControl } from 'react-native';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
 import { COLORS, SPACING, FONTS } from '../../theme';
@@ -104,9 +96,8 @@ const AuditListScreen = ({ navigation, route }) => {
   };
 
   const renderItem = ({ item }) => {
-    console.log('item', item);
     return (
-      <GlassCard style={styles.card}>
+      <Card variant="elevated" style={styles.card}>
         <View style={styles.headerRow}>
           <Text style={styles.auditName}>{item.name}</Text>
           <View
@@ -123,18 +114,20 @@ const AuditListScreen = ({ navigation, route }) => {
           </View>
         </View>
 
-        <View style={styles.row}>
-          <Text style={styles.label}>Plan:</Text>
-          <Text style={styles.value}>{item.plan_name || 'N/A'}</Text>
-        </View>
+        <View style={styles.detailsContainer}>
+          <View style={styles.row}>
+            <Text style={styles.label}>Plan:</Text>
+            <Text style={styles.value}>{item.plan_name || 'N/A'}</Text>
+          </View>
 
-        <View style={styles.row}>
-          <Text style={styles.label}>Start:</Text>
-          <Text style={styles.value}>{item.audit_start_date}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>End:</Text>
-          <Text style={styles.value}>{item.audit_end_date}</Text>
+          <View style={styles.row}>
+            <Text style={styles.label}>Start:</Text>
+            <Text style={styles.value}>{item.audit_start_date}</Text>
+          </View>
+          <View style={styles.row}>
+            <Text style={styles.label}>End:</Text>
+            <Text style={styles.value}>{item.audit_end_date}</Text>
+          </View>
         </View>
 
         {item.members && item.members.length > 0 && (
@@ -155,8 +148,9 @@ const AuditListScreen = ({ navigation, route }) => {
           </View>
         )}
 
-        <GradientButton
+        <Button
           title="Start Audit"
+          variant="primary"
           onPress={() =>
             navigation.navigate('AuditLocations', {
               auditId: item.id,
@@ -165,9 +159,8 @@ const AuditListScreen = ({ navigation, route }) => {
             })
           }
           style={styles.startBtn}
-          colors={COLORS.gradients.primary}
         />
-      </GlassCard>
+      </Card>
     );
   };
 
@@ -213,35 +206,46 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: SPACING.m,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+    paddingBottom: SPACING.s,
   },
   auditName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: COLORS.text,
+    fontFamily: FONTS.bold,
     flex: 1,
   },
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
+    marginLeft: 8,
   },
   badgeText: {
     fontSize: 10,
     fontWeight: 'bold',
   },
+  detailsContainer: {
+    marginBottom: SPACING.s,
+  },
   row: {
     flexDirection: 'row',
-    marginBottom: 4,
+    marginBottom: 6,
+    alignItems: 'center',
   },
   label: {
     fontSize: 14,
     color: COLORS.textLight,
     width: 60,
+    fontFamily: FONTS.medium,
   },
   value: {
     fontSize: 14,
     color: COLORS.text,
     fontWeight: '500',
+    flex: 1,
   },
   emptyContainer: {
     padding: SPACING.xl,
@@ -251,19 +255,18 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
     fontStyle: FONTS.italic,
   },
-  membersRow: { marginTop: 8, marginBottom: 8 },
-  memberChips: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 4, gap: 6 },
+  membersRow: { marginTop: 4, marginBottom: 12 },
+  memberChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   memberChip: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.surfaceHighlight,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  memberText: { fontSize: 12, color: COLORS.text },
-  memberText: { fontSize: 12, color: COLORS.text },
-  startBtn: { marginTop: 10 },
+  memberText: { fontSize: 12, color: COLORS.textMedium },
+  startBtn: { marginTop: 4 },
 });
 
 export default AuditListScreen;

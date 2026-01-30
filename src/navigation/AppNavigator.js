@@ -1,6 +1,6 @@
 import React from 'react';
 import { View } from 'react-native';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createDrawerNavigator } from '@react-navigation/drawer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,21 +12,20 @@ import QRScannerScreen from '../screens/Asset/QRScannerScreen';
 import AssetDetailScreen from '../screens/Asset/AssetDetailScreen';
 import UpdateAssetScreen from '../screens/Asset/UpdateAssetScreen';
 import ForgotPasswordScreen from '../screens/Auth/ForgotPasswordScreen'; // Added import
-import {
-  CheckInOutScreen,
-  AuditListScreen,
-  AuditReportsScreen,
-  AuditReportDetailsScreen,
-  RemindersScreen,
-  ApprovalsScreen,
-  AssetAssignmentScreen,
-  AssetAssignmentDetailScreen,
-  InvoicesScreen,
-  CurrentPlanScreen,
-  AuditLocationsScreen,
-  AuditCategoriesScreen,
-  AuditAssetListScreen,
-} from '../screens/Modules/ModuleScreens';
+// Direct imports to avoid circular dependency via ModuleScreens
+import CheckInOutScreen from '../screens/Modules/CheckInOutScreen';
+import AuditListScreen from '../screens/Audit/AuditListScreen';
+import AuditReportsScreen from '../screens/Modules/AuditReportsScreen';
+import AuditReportDetailsScreen from '../screens/Modules/AuditReportDetailsScreen';
+import RemindersScreen from '../screens/Modules/RemindersScreen';
+import ApprovalsScreen from '../screens/Modules/ApprovalsScreen';
+import AssetAssignmentScreen from '../screens/Modules/AssetAssignmentScreen';
+import AssetAssignmentDetailScreen from '../screens/Modules/AssetAssignmentDetailScreen';
+import InvoicesScreen from '../screens/Modules/InvoicesScreen';
+import CurrentPlanScreen from '../screens/Modules/CurrentPlanScreen';
+import AuditLocationsScreen from '../screens/Audit/AuditLocationsScreen';
+import AuditCategoriesScreen from '../screens/Audit/AuditCategoriesScreen';
+import AuditAssetListScreen from '../screens/Audit/AuditAssetListScreen';
 
 import SideMenu from '../components/navigation/SideMenu';
 import { useAuth } from '../context/AuthContext';
@@ -263,7 +262,7 @@ const AppNavigator = () => {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer theme={DefaultTheme}>
       <Stack.Navigator
         screenOptions={{ headerShown: false }}
         initialRouteName={user ? initialRoute : 'Login'}

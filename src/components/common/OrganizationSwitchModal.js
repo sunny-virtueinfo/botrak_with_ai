@@ -85,11 +85,14 @@ const OrganizationSwitchModal = ({ visible, onClose, onSelect }) => {
     >
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
-          <View style={styles.header}>
-            <Text style={styles.title}>Change Organization</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Feather name="x" size={24} color={COLORS.text} />
-            </TouchableOpacity>
+          <View style={styles.modalContentInner}>
+            <View style={styles.iconBadge}>
+              <Feather name="briefcase" size={32} color={COLORS.primary} />
+            </View>
+            <Text style={styles.modalTitle}>Change Organization</Text>
+            <Text style={styles.modalSubtitle}>
+              Select an organization to switch to
+            </Text>
           </View>
 
           {isLoading ? (
@@ -111,9 +114,9 @@ const OrganizationSwitchModal = ({ visible, onClose, onSelect }) => {
                       styles.orgItem,
                       isSelected && styles.selectedItem,
                       !hasPlan && styles.disabledItem,
-                      index === organizations.length - 1 && {
-                        borderBottomWidth: 0,
-                      },
+                      // index === organizations.length - 1 && {
+                      //   borderBottomWidth: 0,
+                      // },
                     ]}
                     onPress={() => handleOrgSelect(org)}
                     activeOpacity={0.8}
@@ -146,7 +149,9 @@ const OrganizationSwitchModal = ({ visible, onClose, onSelect }) => {
               style={[styles.button, styles.changeButton]}
               onPress={handleConfirm}
             >
-              <Text style={styles.changeButtonText}>Change</Text>
+              <Text style={[styles.changeButtonText, styles.buttonText]}>
+                Change
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.button, styles.cancelButton]}
@@ -191,22 +196,58 @@ const styles = StyleSheet.create({
   list: {
     paddingBottom: 10,
   },
+  cancelButtonText: {
+    color: COLORS.primary,
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  modalContentInner: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  iconBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: COLORS.primaryLight + '20', // transparent primary
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.m,
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: COLORS.text,
+    fontFamily: FONTS.bold,
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  modalSubtitle: {
+    fontSize: 14,
+    color: COLORS.textLight,
+    fontFamily: FONTS.medium,
+    marginBottom: SPACING.l,
+    textAlign: 'center',
+  },
   orgItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 15,
-    borderBottomWidth: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderWidth: 1,
     borderColor: COLORS.border,
+    borderRadius: 12,
+    marginBottom: 8,
+    backgroundColor: COLORS.background,
   },
   selectedItem: {
-    // Optional: add background highlight
-  },
-  disabledItem: {
-    opacity: 0.5,
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + '10',
   },
   orgName: {
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: '600',
     color: COLORS.text,
     flex: 1,
   },
@@ -215,30 +256,35 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: COLORS.border,
+    borderColor: COLORS.textLight,
+    marginLeft: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 10,
   },
   radioSelected: {
     borderColor: COLORS.primary,
   },
   radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     backgroundColor: COLORS.primary,
+  },
+  disabledItem: {
+    opacity: 0.5,
   },
   buttonContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    gap: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 16,
   },
   button: {
     flex: 1,
-    height: 45,
-    borderRadius: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    marginHorizontal: 8,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -246,18 +292,21 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primary,
   },
   cancelButton: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary + '10',
   },
   changeButtonText: {
-    color: 'white',
+    color: COLORS.text,
     fontWeight: 'bold',
     fontSize: 16,
   },
   cancelButtonText: {
     color: COLORS.primary,
     fontWeight: 'bold',
+    fontSize: 16,
+  },
+  buttonText: {
+    color: COLORS.textInverse,
+    fontFamily: FONTS.bold,
     fontSize: 16,
   },
 });

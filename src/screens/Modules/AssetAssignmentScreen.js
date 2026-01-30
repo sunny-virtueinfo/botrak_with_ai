@@ -17,6 +17,7 @@ import { useCustomModal } from '../../context/ModalContext';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
+import Button from '../../components/common/Button';
 
 const AssetAssignmentScreen = ({ navigation, route }) => {
   const api = useApiService();
@@ -27,6 +28,7 @@ const AssetAssignmentScreen = ({ navigation, route }) => {
   const [registerId, setRegisterId] = useState(paramRegisterId || null);
 
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [index, setIndex] = useState(0);
 
   // Data
@@ -54,8 +56,12 @@ const AssetAssignmentScreen = ({ navigation, route }) => {
     return unsubscribe;
   }, [navigation, route.params]);
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = async (isRefresh = false) => {
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
     // 1. Ensure we have a register ID
     let currentRegisterId = paramRegisterId || registerId;
 
@@ -90,6 +96,7 @@ const AssetAssignmentScreen = ({ navigation, route }) => {
       ]);
     }
     setLoading(false);
+    setRefreshing(false);
   };
 
   const loadAssets = async (regId, type) => {
@@ -317,57 +324,49 @@ const AssetAssignmentScreen = ({ navigation, route }) => {
         navigation.navigate('AssetRegisterSelection', { organizationId })
       }
     >
-      {loading ? (
-        <Loader visible={true} size="large" />
-      ) : (
-        <View style={{ flex: 1 }}>
-          {/* Custom Tabs */}
-          <View style={styles.tabHeader}>
-            <TouchableOpacity
-              style={[styles.tabBtn, index === 0 && styles.activeTabBtn]}
-              onPress={() => setIndex(0)}
-            >
-              <Text
-                style={[styles.tabText, index === 0 && styles.activeTabText]}
-              >
-                Assigned
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.tabBtn, index === 1 && styles.activeTabBtn]}
-              onPress={() => setIndex(1)}
-            >
-              <Text
-                style={[styles.tabText, index === 1 && styles.activeTabText]}
-              >
-                Unassigned
-              </Text>
-            </TouchableOpacity>
-          </View>
+      <Loader visible={loading} message="Loading assets..." />
 
-          <View style={{ flex: 1, backgroundColor: 'transparent' }}>
-            <FlatList
-              data={index === 0 ? assignedAssets : unassignedAssets}
-              renderItem={
-                index === 0 ? renderAssignedItem : renderUnassignedItem
-              }
-              keyExtractor={item =>
-                String(item.id || item.asset_id || Math.random())
-              }
-              contentContainerStyle={styles.list}
-              ListEmptyComponent={
-                <Text style={styles.emptyText}>
-                  {index === 0
-                    ? 'No assigned assets found.'
-                    : 'No unassigned assets found.'}
-                </Text>
-              }
-              refreshing={loading}
-              onRefresh={loadData}
-            />
-          </View>
+      <View style={{ flex: 1 }}>
+        {/* Custom Tabs */}
+        <View style={styles.tabHeader}>
+          <TouchableOpacity
+            style={[styles.tabBtn, index === 0 && styles.activeTabBtn]}
+            onPress={() => setIndex(0)}
+          >
+            <Text style={[styles.tabText, index === 0 && styles.activeTabText]}>
+              Assigned
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tabBtn, index === 1 && styles.activeTabBtn]}
+            onPress={() => setIndex(1)}
+          >
+            <Text style={[styles.tabText, index === 1 && styles.activeTabText]}>
+              Unassigned
+            </Text>
+          </TouchableOpacity>
         </View>
-      )}
+
+        <View style={{ flex: 1, backgroundColor: 'transparent' }}>
+          <FlatList
+            data={index === 0 ? assignedAssets : unassignedAssets}
+            renderItem={index === 0 ? renderAssignedItem : renderUnassignedItem}
+            keyExtractor={item =>
+              String(item.id || item.asset_id || Math.random())
+            }
+            contentContainerStyle={styles.list}
+            ListEmptyComponent={
+              <Text style={styles.emptyText}>
+                {index === 0
+                  ? 'No assigned assets found.'
+                  : 'No unassigned assets found.'}
+              </Text>
+            }
+            refreshing={refreshing}
+            onRefresh={() => loadData(true)}
+          />
+        </View>
+      </View>
       {/* Unassign Reason Modal */}
       <Modal
         visible={unassignModalVisible}
@@ -387,28 +386,23 @@ const AssetAssignmentScreen = ({ navigation, route }) => {
               multiline
             />
             <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.cancelBtn]}
-                onPress={() => setUnassignModalVisible(false)}
-              >
-                <Text style={styles.btnTextBlack}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.confirmBtn]}
-                onPress={handleUnassignConfirm}
-                disabled={submitting}
-              >
-                {submitting ? (
-                  <Loader
-                    visible={true}
-                    size="small"
-                    color="white"
-                    overlay={false}
-                  />
-                ) : (
-                  <Text style={styles.btnTextWhite}>Unassign</Text>
-                )}
-              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Button
+                  title="Cancel"
+                  variant="neutral"
+                  onPress={() => setUnassignModalVisible(false)}
+                  style={{ width: '100%' }}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button
+                  title="Unassign"
+                  variant="danger"
+                  onPress={handleUnassignConfirm}
+                  loading={submitting}
+                  style={{ width: '100%' }}
+                />
+              </View>
             </View>
           </View>
         </View>
@@ -459,6 +453,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 5,
   },
+  btnTextWhite: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
   emptyText: {
     textAlign: 'center',
     marginTop: 30,
@@ -500,12 +499,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     marginBottom: 20,
   },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
-  modalBtn: { paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8 },
-  cancelBtn: { backgroundColor: COLORS.gradients.background[0] },
-  confirmBtn: { backgroundColor: COLORS.error }, // Red for unassign
-  btnTextWhite: { color: 'white', fontWeight: 'bold' },
-  btnTextBlack: { color: COLORS.text, fontWeight: 'bold' },
+  modalActions: { flexDirection: 'row', gap: 12, marginTop: 10 },
 
   // Custom Tabs
   tabHeader: {
@@ -526,6 +520,15 @@ const styles = StyleSheet.create({
   activeTabBtn: { borderBottomColor: COLORS.primary },
   tabText: { fontSize: 16, color: COLORS.textLight, fontWeight: 'bold' },
   activeTabText: { color: COLORS.primary },
+  iconBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.m,
+    alignSelf: 'center',
+  },
 });
 
 export default AssetAssignmentScreen;

@@ -9,7 +9,7 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import { COLORS, SPACING, FONTS, SHADOWS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
-import GlassCard from '../../components/premium/GlassCard';
+import Card from '../../components/common/Card';
 import Feather from 'react-native-vector-icons/Feather';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
@@ -33,7 +33,6 @@ const RemindersScreen = ({ route, navigation }) => {
         return;
       }
       const response = await api.getReminders(organizationId);
-      console.log('response', response);
       if (response.data && response.data.success) {
         setReminders(response.data.organization_reminders || []);
       }
@@ -65,11 +64,9 @@ const RemindersScreen = ({ route, navigation }) => {
   };
 
   const renderItem = ({ item }) => {
-    // Determine the type to display/style
     const type = item.reminder_type || 'General';
     const isMaintenance = type.toLowerCase() === 'maintenance';
 
-    // Fallback for fields
     const title = item.title || item.asset_name || 'Reminder';
     const message =
       item.message || item.description || 'No description provided';
@@ -77,7 +74,7 @@ const RemindersScreen = ({ route, navigation }) => {
     const formattedDate = dateStr ? new Date(dateStr).toDateString() : 'N/A';
 
     return (
-      <GlassCard style={styles.card}>
+      <Card variant="elevated" style={styles.card}>
         <View style={styles.header}>
           <Text style={styles.title}>{title}</Text>
           <View
@@ -85,25 +82,39 @@ const RemindersScreen = ({ route, navigation }) => {
               styles.badge,
               {
                 backgroundColor: isMaintenance
-                  ? COLORS.error
-                  : COLORS.secondary,
+                  ? COLORS.error + '20' // Light version
+                  : COLORS.secondary + '20',
               },
             ]}
           >
-            <Text style={styles.badgeText}>{type}</Text>
+            <Text
+              style={[
+                styles.badgeText,
+                {
+                  color: isMaintenance ? COLORS.error : COLORS.secondary,
+                },
+              ]}
+            >
+              {type}
+            </Text>
           </View>
         </View>
         <Text style={styles.message}>{message}</Text>
 
         {/* Show asset code if available */}
         {item.asset_code && (
-          <Text style={[styles.message, { fontWeight: 'bold' }]}>
+          <Text
+            style={[styles.message, { fontWeight: 'bold', color: COLORS.text }]}
+          >
             Asset: {item.asset_code}
           </Text>
         )}
 
-        <Text style={styles.date}>Due: {formattedDate}</Text>
-      </GlassCard>
+        <View style={styles.footer}>
+          <Feather name="calendar" size={14} color={COLORS.textLight} />
+          <Text style={styles.date}>{formattedDate}</Text>
+        </View>
+      </Card>
     );
   };
 
@@ -160,7 +171,7 @@ const RemindersScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  list: { padding: SPACING.m },
+  list: { padding: SPACING.m, paddingBottom: 100 },
   card: { marginBottom: SPACING.m, padding: SPACING.m, borderRadius: 16 },
   header: {
     flexDirection: 'row',
@@ -174,65 +185,74 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontFamily: FONTS.bold,
   },
-  badge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 8 },
+  badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   badgeText: {
-    color: 'white',
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 'bold',
     textTransform: 'uppercase',
   },
-  message: { fontSize: 14, color: COLORS.textLight, marginBottom: SPACING.s },
-  date: { fontSize: 12, color: COLORS.primary, fontWeight: '600' },
+  message: {
+    fontSize: 14,
+    color: COLORS.textLight,
+    marginBottom: SPACING.s,
+    fontFamily: FONTS.regular,
+    lineHeight: 20,
+  },
+  footer: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
+  date: { fontSize: 12, color: COLORS.textLight, fontWeight: '600' },
   emptyText: {
     textAlign: 'center',
     marginTop: 20,
     color: COLORS.textLight,
-    fontStyle: FONTS.italic,
+    fontStyle: 'italic',
+    fontFamily: FONTS.medium,
   },
 
   // FAB Styles
   fab: {
     position: 'absolute',
-    bottom: 30,
+    bottom: 40,
     right: 30,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     ...SHADOWS.medium,
     elevation: 5,
     zIndex: 99,
   },
   fabGradient: {
     flex: 1,
-    borderRadius: 30,
+    borderRadius: 32,
     justifyContent: 'center',
     alignItems: 'center',
   },
   fabOptionsContainer: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 120,
     right: 30,
     alignItems: 'flex-end',
     zIndex: 99,
+    gap: 12,
   },
   fabOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.m,
   },
   fabOptionText: {
-    marginRight: SPACING.m,
+    marginRight: 12,
     fontWeight: '600',
     color: COLORS.text,
     backgroundColor: 'white',
-    padding: 8,
-    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     elevation: 2,
+    fontFamily: FONTS.medium,
   },
   miniFab: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: COLORS.secondary,
     justifyContent: 'center',
     alignItems: 'center',

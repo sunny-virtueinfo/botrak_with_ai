@@ -3,16 +3,16 @@ import {
   View,
   Text,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
-  Alert,
   Modal,
   FlatList,
+  Pressable,
 } from 'react-native';
-import { COLORS, SPACING, SHADOWS } from '../../theme';
+import { COLORS, SPACING, SHADOWS, FONTS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
 import { useToast } from '../../context/ToastContext';
-import GradientButton from '../../components/premium/GradientButton';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Feather from 'react-native-vector-icons/Feather';
 
@@ -122,11 +122,17 @@ const AddReminderScreen = ({ navigation, route }) => {
       <Modal
         transparent={true}
         visible={showCalendar}
-        animationType="slide"
+        animationType="fade"
         onRequestClose={() => setShowCalendar(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.calendarContainer}>
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setShowCalendar(false)}
+        >
+          <Pressable
+            style={styles.calendarContainer}
+            onPress={e => e.stopPropagation()}
+          >
             <View style={styles.calendarHeader}>
               <TouchableOpacity
                 onPress={() => changeMonth(-1)}
@@ -172,14 +178,14 @@ const AddReminderScreen = ({ navigation, route }) => {
               )}
             />
 
-            <TouchableOpacity
-              style={styles.closeButton}
+            <Button
+              title="Close"
+              variant="ghost"
               onPress={() => setShowCalendar(false)}
-            >
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+              style={{ marginTop: SPACING.m }}
+            />
+          </Pressable>
+        </Pressable>
       </Modal>
     );
   };
@@ -192,42 +198,34 @@ const AddReminderScreen = ({ navigation, route }) => {
       contentContainerStyle={styles.content}
     >
       <View style={styles.formGroup}>
-        <Text style={styles.label}>
-          Asset Code <Text style={styles.required}>*</Text>
-        </Text>
-        <TextInput
-          style={styles.input}
+        <Input
+          label="Asset Code"
           value={assetCode}
           onChangeText={setAssetCode}
           placeholder="Enter Asset Code"
-          placeholderTextColor={COLORS.textLight}
           editable={!assetId}
+          required
         />
       </View>
 
       <View style={styles.formGroup}>
-        <Text style={styles.label}>
-          Title <Text style={styles.required}>*</Text>
-        </Text>
-        <TextInput
-          style={styles.input}
+        <Input
+          label="Title"
           value={title}
           onChangeText={setTitle}
           placeholder="Reminder Title"
-          placeholderTextColor={COLORS.textLight}
+          required
         />
       </View>
 
       <View style={styles.formGroup}>
-        <Text style={styles.label}>Description</Text>
-        <TextInput
-          style={[styles.input, styles.textArea]}
+        <Input
+          label="Description"
           value={description}
           onChangeText={setDescription}
           placeholder="Enter Description"
-          placeholderTextColor={COLORS.textLight}
-          multiline
-          textAlignVertical="top"
+          area
+          style={styles.textArea}
         />
       </View>
 
@@ -235,34 +233,34 @@ const AddReminderScreen = ({ navigation, route }) => {
         <Text style={styles.label}>
           Date (DD-MM-YYYY) <Text style={styles.required}>*</Text>
         </Text>
-        <TouchableOpacity onPress={() => setShowCalendar(true)}>
+        <TouchableOpacity
+          onPress={() => setShowCalendar(true)}
+          activeOpacity={0.8}
+        >
           <View pointerEvents="none">
-            <TextInput
-              style={styles.input}
+            <Input
               value={date}
               placeholder="Select Date"
-              placeholderTextColor={COLORS.textLight}
               editable={false}
+              icon="calendar"
             />
           </View>
-          <Feather
-            name="calendar"
-            size={20}
-            color={COLORS.textLight}
-            style={styles.calendarIcon}
-          />
         </TouchableOpacity>
       </View>
 
       <View style={styles.buttonRow}>
-        <TouchableOpacity style={styles.resetButton} onPress={handleReset}>
-          <Text style={styles.resetButtonText}>Reset</Text>
-        </TouchableOpacity>
-        <GradientButton
+        <Button
+          title="Reset"
+          variant="secondary"
+          onPress={handleReset}
+          style={{ flex: 1 }}
+        />
+        <Button
           title="Submit"
+          variant="primary"
           onPress={handleSubmit}
           loading={loading}
-          style={styles.submitButton}
+          style={{ flex: 1 }}
         />
       </View>
 
@@ -273,49 +271,30 @@ const AddReminderScreen = ({ navigation, route }) => {
 
 const styles = StyleSheet.create({
   content: { padding: SPACING.m },
-  formGroup: { marginBottom: SPACING.l },
+  formGroup: { marginBottom: SPACING.s },
   label: {
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.text,
     marginBottom: 8,
+    fontFamily: FONTS.semiBold,
   },
   required: { color: COLORS.error },
-  input: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 8,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    fontSize: 16,
-    color: COLORS.text,
-  },
-  calendarIcon: { position: 'absolute', right: 12, top: 12 },
   textArea: { height: 100 },
-  buttonRow: { flexDirection: 'row', gap: SPACING.m, marginTop: SPACING.m },
-  resetButton: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 10,
-    backgroundColor: COLORS.gradients.background[0],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  resetButtonText: { color: COLORS.textLight, fontWeight: 'bold' },
-  submitButton: { flex: 1 },
+  buttonRow: { flexDirection: 'row', gap: SPACING.m, marginTop: SPACING.l },
 
   // Calendar Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.7)', // Slate 900 70%
     justifyContent: 'center',
     padding: SPACING.m,
   },
   calendarContainer: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: SPACING.m,
-    ...SHADOWS.medium,
+    backgroundColor: COLORS.surface,
+    borderRadius: 24,
+    padding: SPACING.l,
+    ...SHADOWS.hard,
   },
   calendarHeader: {
     flexDirection: 'row',
@@ -323,7 +302,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: SPACING.m,
   },
-  monthTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
+  monthTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    fontFamily: FONTS.bold,
+  },
   weekRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -334,6 +318,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '600',
     color: COLORS.textLight,
+    fontFamily: FONTS.medium,
   },
   dayCell: {
     width: 40,
@@ -341,14 +326,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     margin: 2,
-  },
-  activeDayCell: {
-    backgroundColor: COLORS.gradients.background[0],
     borderRadius: 20,
   },
-  dayText: { color: COLORS.text },
-  closeButton: { marginTop: SPACING.m, alignSelf: 'center', padding: 10 },
-  closeButtonText: { color: COLORS.primary, fontWeight: 'bold' },
+  activeDayCell: {
+    backgroundColor: COLORS.primary + '20', // Opacity
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+  },
+  dayText: { color: COLORS.text, fontFamily: FONTS.medium },
 });
 
 export default AddReminderScreen;

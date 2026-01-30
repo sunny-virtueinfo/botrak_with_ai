@@ -8,9 +8,9 @@ import {
   RefreshControl,
 } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
-import { COLORS, SHADOWS, SPACING } from '../../theme';
+import { COLORS, SHADOWS, SPACING, FONTS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
-import GlassCard from '../../components/premium/GlassCard';
+import Card from '../../components/common/Card';
 import { useToast } from '../../context/ToastContext';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
@@ -61,7 +61,7 @@ const AuditReportsScreen = ({ navigation, route }) => {
         })
       }
     >
-      <GlassCard style={styles.card}>
+      <Card variant="elevated" style={styles.card}>
         <View style={styles.headerRow}>
           <Text style={styles.title}>{item.name}</Text>
           <View style={styles.statusBadge}>
@@ -102,7 +102,7 @@ const AuditReportsScreen = ({ navigation, route }) => {
             <Feather name="arrow-right" size={12} color={COLORS.primary} />
           </View>
         </View>
-      </GlassCard>
+      </Card>
     </TouchableOpacity>
   );
 
@@ -140,9 +140,8 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
   },
-  card: { marginBottom: 15, padding: 15 },
+  card: { marginBottom: 15 },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -155,9 +154,10 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     flex: 1,
     marginRight: 10,
+    fontFamily: FONTS.bold,
   },
   statusBadge: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.surfaceHighlight,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 6,
@@ -186,6 +186,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 13,
     color: COLORS.textLight,
+    fontFamily: FONTS.regular,
   },
   footer: {
     flexDirection: 'row',
@@ -206,7 +207,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginRight: 4,
   },
-  empty: { textAlign: 'center', marginTop: 20, color: COLORS.textLight },
+  empty: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: COLORS.textLight,
+    fontStyle: 'italic',
+    fontFamily: FONTS.medium,
+  },
 });
 
 export default AuditReportsScreen;

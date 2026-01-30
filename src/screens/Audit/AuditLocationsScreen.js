@@ -7,9 +7,9 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import Feather from 'react-native-vector-icons/Feather';
-import { COLORS, SPACING, FONTS } from '../../theme';
+import { COLORS, SPACING, FONTS, SHADOWS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
-import GlassCard from '../../components/premium/GlassCard';
+import Card from '../../components/common/Card';
 import AuditLocationSelectionModal from './AuditLocationSelectionModal';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 
@@ -69,30 +69,24 @@ const AuditLocationsScreen = ({ route, navigation }) => {
   };
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity
+    <Card
       onPress={() => handleLocationSelect(item)}
-      activeOpacity={0.7}
+      variant="elevated"
+      style={styles.card}
     >
-      <GlassCard style={styles.card}>
-        <View style={styles.row}>
-          <View style={styles.iconContainer}>
-            <Feather name="map-pin" size={24} color={COLORS.primary} />
-          </View>
-          <View>
-            <Text style={styles.title}>{item.name}</Text>
-            <Text style={styles.subtitle}>
-              Plant ID: {item.plant_id || 'N/A'}
-            </Text>
-          </View>
-          <Feather
-            name="chevron-right"
-            size={24}
-            color={COLORS.textLight}
-            style={{ marginLeft: 'auto' }}
-          />
+      <View style={styles.row}>
+        <View style={styles.iconContainer}>
+          <Feather name="map-pin" size={24} color={COLORS.primary} />
         </View>
-      </GlassCard>
-    </TouchableOpacity>
+        <View style={styles.textData}>
+          <Text style={styles.title}>{item.name}</Text>
+          <Text style={styles.subtitle}>
+            Plant ID: {item.plant_id || 'N/A'}
+          </Text>
+        </View>
+        <Feather name="chevron-right" size={24} color={COLORS.textLight} />
+      </View>
+    </Card>
   );
 
   return (
@@ -123,13 +117,26 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: COLORS.primary + '20',
+    backgroundColor: COLORS.surfaceHighlight, // Use standardized color
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: SPACING.m,
   },
-  title: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
-  subtitle: { fontSize: 14, color: COLORS.textLight, marginTop: 4 },
+  textData: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: COLORS.text,
+    fontFamily: FONTS.bold,
+  },
+  subtitle: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    marginTop: 4,
+    fontFamily: FONTS.regular,
+  },
 });
 
 export default AuditLocationsScreen;

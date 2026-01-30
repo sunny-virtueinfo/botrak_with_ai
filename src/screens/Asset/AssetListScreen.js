@@ -4,32 +4,23 @@ import {
   Text,
   FlatList,
   StyleSheet,
-  TextInput,
   TouchableOpacity,
-  Modal,
 } from 'react-native';
-import { COLORS, SPACING, SHADOWS, FONTS } from '../../theme';
+import { SPACING, SHADOWS, FONTS, COLORS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
 import { useToast } from '../../context/ToastContext';
 import Feather from 'react-native-vector-icons/Feather';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
-
+import Card from '../../components/common/Card';
+import Input from '../../components/common/Input';
 import Loader from '../../components/common/Loader';
 import NewPickerForPlant from '../../components/common/NewPickerForPlant';
-
-const CONSTANT_USAGE = [
-  { name: 'Medium', value: 'medium' },
-  { name: 'Idle', value: 'idle' },
-  { name: 'Low', value: 'low' },
-  { name: 'High', value: 'high' },
-];
 
 const AssetListScreen = ({ route, navigation }) => {
   const { organizationId, orgName, isManualAudit } = route.params || {};
   const [assets, setAssets] = useState([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
-
   // Filter States
   const [plants, setPlants] = useState([]);
   const [selectedPlant, setSelectedPlant] = useState(null);
@@ -67,7 +58,7 @@ const AssetListScreen = ({ route, navigation }) => {
         if (route.params?.plantId) {
           const paramPlant = plantList.find(p => p.id === route.params.plantId);
           if (paramPlant) {
-            handlePlantSelect(paramPlant, false); // false = don't toggle picker
+            handlePlantSelect(paramPlant);
             return;
           }
         }
@@ -228,20 +219,47 @@ const AssetListScreen = ({ route, navigation }) => {
     }
   };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity activeOpacity={0.7} onPress={() => handleItemPress(item)}>
-      <View style={styles.card}>
-        <View style={styles.statusIndicator(item.status)} />
+  const renderItem = ({ item }) => {
+    const isAvailable = item.status?.toLowerCase() === 'assigned';
+    const statusText = isAvailable ? 'Assigned' : 'Available';
+    const statusColor = isAvailable ? COLORS.success : COLORS.warning;
+    return (
+      <Card
+        onPress={() => handleItemPress(item)}
+        style={styles.card}
+        variant="elevated"
+      >
+        {/* <View style={[styles.statusStrip, { backgroundColor: statusColor }]} /> */}
         <View style={styles.cardContent}>
-          <Text style={styles.assetName}>{item.name || item.asset_code}</Text>
-          <Text style={styles.assetCode}>QR: {item.qr_code}</Text>
-          <View style={styles.badgeContainer}>
-            <Text style={styles.badgeText}>{item.status}</Text>
+          <View style={{}}>
+            <Text style={styles.assetName} numberOfLines={1}>
+              {item.asset_code}
+            </Text>
+            <View style={styles.row}>
+              <Feather
+                name="box"
+                size={14}
+                color={COLORS.textLight}
+                style={{ marginRight: 6 }}
+              />
+              <Text style={styles.assetCode}>QR: {item.qr_code}</Text>
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.badgeContainer,
+              { backgroundColor: statusColor + '15' },
+            ]}
+          >
+            <Text style={[styles.badgeText, { color: statusColor }]}>
+              {statusText}
+            </Text>
           </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </Card>
+    );
+  };
 
   return (
     <ScreenWrapper
@@ -250,8 +268,8 @@ const AssetListScreen = ({ route, navigation }) => {
       showBack={isStackMode}
       scrollable={false}
     >
-      <View style={styles.filterContainer}>
-        <View style={{ flex: 1 }}>
+      <View style={styles.headerContainer}>
+        <View style={styles.filterSection}>
           <NewPickerForPlant
             plants={plants}
             selected={selectedPlant}
@@ -259,15 +277,13 @@ const AssetListScreen = ({ route, navigation }) => {
             pickerStyle={styles.dropdownBtn}
           />
         </View>
-      </View>
 
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search Assets..."
-          placeholderTextColor={COLORS.textLight}
+        <Input
+          placeholder="Search by name or QR code..."
           value={search}
           onChangeText={handleSearch}
+          icon="search"
+          style={{ marginBottom: SPACING.s }}
         />
       </View>
 
@@ -287,7 +303,12 @@ const AssetListScreen = ({ route, navigation }) => {
             ) : null
           }
           ListEmptyComponent={
-            <Text style={styles.emptyText}>No assets found.</Text>
+            <View style={styles.emptyContainer}>
+              <Feather name="box" size={48} color={COLORS.border} />
+              <Text style={styles.emptyText}>
+                No assets found matching criteria.
+              </Text>
+            </View>
           }
         />
       )}
@@ -296,78 +317,86 @@ const AssetListScreen = ({ route, navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  filterContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: SPACING.m,
-    paddingTop: SPACING.m,
+  headerContainer: {
+    padding: SPACING.m,
     paddingBottom: 0,
-    gap: 10,
+    backgroundColor: COLORS.background,
+  },
+  filterSection: {
+    marginBottom: SPACING.s,
   },
   dropdownBtn: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    paddingVertical: 10,
+    backgroundColor: COLORS.surface,
+    borderRadius: 12,
+    paddingVertical: 12,
     borderWidth: 1,
     borderColor: COLORS.border,
+    paddingHorizontal: 12,
+    ...SHADOWS.soft,
+  },
+  list: {
+    padding: SPACING.m,
+    paddingTop: SPACING.s,
+  },
+  card: {
+    // padding: 0,
+    // flexDirection: 'row',
+    marginBottom: SPACING.s,
+    // overflow: 'hidden',
+    // backgroundColor: COLORS.primaryDark,
+  },
+  statusStrip: {
+    // flex: 1,
+    width: 6,
+    height: '20%',
+  },
+  cardContent: {
+    flex: 1,
+    // padding: SPACING.s,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 12,
-  },
-  searchContainer: {
-    padding: SPACING.m,
-  },
-  searchInput: {
-    backgroundColor: COLORS.surface,
-    padding: SPACING.m,
-    borderRadius: 10,
-    fontSize: 16,
-    color: COLORS.text,
-    ...SHADOWS.soft,
-  },
-  list: { padding: SPACING.m },
-  card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    marginBottom: SPACING.m,
-    flexDirection: 'row',
-    overflow: 'hidden',
-    ...SHADOWS.soft,
-  },
-  statusIndicator: status => ({
-    width: 5,
-    backgroundColor: status === 'available' ? COLORS.secondary : COLORS.error,
-  }),
-  cardContent: {
-    padding: SPACING.m,
-    flex: 1,
+    // backgroundColor: COLORS.primary,
   },
   assetName: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: COLORS.text,
+    fontFamily: FONTS.bold,
     marginBottom: 4,
   },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   assetCode: {
-    fontSize: 12,
+    fontSize: 13,
     color: COLORS.textLight,
-    fontStyle: FONTS.italic,
+    fontFamily: FONTS.medium,
+  },
+  badgeContainer: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 8,
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
   },
   emptyText: {
     textAlign: 'center',
-    marginTop: 20,
+    marginTop: 16,
     color: COLORS.textLight,
-    fontStyle: FONTS.italic,
+    fontFamily: FONTS.medium,
+    fontSize: 16,
   },
-  badgeContainer: {
-    marginTop: 5,
-    alignSelf: 'flex-start',
-    backgroundColor: COLORS.gradients.background[0],
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  badgeText: { fontSize: 10, color: COLORS.textLight },
 });
 
 export default AssetListScreen;

@@ -7,12 +7,15 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
+  Pressable,
 } from 'react-native';
 import { COLORS, SPACING, FONTS, SHADOWS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
 import { useToast } from '../../context/ToastContext';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
-import GlassCard from '../../components/premium/GlassCard';
+import Card from '../../components/common/Card';
+import Button from '../../components/common/Button';
+import Input from '../../components/common/Input';
 import Feather from 'react-native-vector-icons/Feather';
 import Loader from '../../components/common/Loader';
 
@@ -45,6 +48,7 @@ const ApprovalsScreen = ({ route, navigation }) => {
       setLoading(false);
     } catch (e) {
       console.error(e);
+      setLoading(false);
     }
   };
 
@@ -85,6 +89,7 @@ const ApprovalsScreen = ({ route, navigation }) => {
       loadRequests();
     } catch (e) {
       console.error(e);
+      showToast('Action failed', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -102,6 +107,7 @@ const ApprovalsScreen = ({ route, navigation }) => {
       loadRequests();
     } catch (e) {
       console.error(e);
+      showToast('Action failed', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -122,7 +128,7 @@ const ApprovalsScreen = ({ route, navigation }) => {
   );
 
   const renderItem = ({ item }) => (
-    <GlassCard style={styles.card}>
+    <Card variant="elevated" style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={styles.idBadge}>
           <Feather name="box" size={14} color="white" />
@@ -161,32 +167,26 @@ const ApprovalsScreen = ({ route, navigation }) => {
       />
 
       <View style={styles.actionRow}>
-        <TouchableOpacity
-          style={styles.rejectButton}
-          onPress={() => openRejectModal(item.id)}
-        >
-          <Feather
-            name="x"
-            size={18}
-            color="white"
-            style={{ marginRight: 8 }}
+        <View style={{ flex: 1 }}>
+          <Button
+            title="Reject"
+            variant="danger"
+            icon="x"
+            onPress={() => openRejectModal(item.id)}
+            style={{ width: '100%' }}
           />
-          <Text style={styles.rejectButtonText}>Reject</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.approveButton}
-          onPress={() => openApproveModal(item.id)}
-        >
-          <Feather
-            name="check"
-            size={18}
-            color="white"
-            style={{ marginRight: 8 }}
+        </View>
+        <View style={{ flex: 1 }}>
+          <Button
+            title="Approve"
+            variant="primary"
+            icon="check"
+            onPress={() => openApproveModal(item.id)}
+            style={{ width: '100%' }}
           />
-          <Text style={styles.approveButtonText}>Approve</Text>
-        </TouchableOpacity>
+        </View>
       </View>
-    </GlassCard>
+    </Card>
   );
 
   return (
@@ -211,7 +211,9 @@ const ApprovalsScreen = ({ route, navigation }) => {
           refreshing={refreshing}
           onRefresh={onRefresh}
           ListEmptyComponent={
-            <Text style={styles.emptyText}>No pending approvals.</Text>
+            <View style={{ marginTop: 40, alignItems: 'center' }}>
+              <Text style={styles.emptyText}>No pending approvals.</Text>
+            </View>
           }
         />
       )}
@@ -223,28 +225,35 @@ const ApprovalsScreen = ({ route, navigation }) => {
         animationType="fade"
         onRequestClose={handleCancelApprove}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <Pressable style={styles.modalOverlay} onPress={handleCancelApprove}>
+          <Pressable
+            style={styles.modalContent}
+            onPress={e => e.stopPropagation()}
+          >
             <Text style={styles.modalTitle}>Approve Request</Text>
             <Text style={styles.modalMessage}>
               Are you sure you want to approve this request?
             </Text>
             <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnCancel]}
-                onPress={handleCancelApprove}
-              >
-                <Text style={styles.modalBtnTextCancel}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnConfirm]}
-                onPress={handleApproveConfirm}
-              >
-                <Text style={styles.modalBtnTextConfirm}>Accept</Text>
-              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Button
+                  title="Cancel"
+                  variant="neutral"
+                  onPress={handleCancelApprove}
+                  style={{ width: '100%' }}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button
+                  title="Accept"
+                  variant="primary"
+                  onPress={handleApproveConfirm}
+                  style={{ width: '100%' }}
+                />
+              </View>
             </View>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* Reject Modal */}
@@ -254,34 +263,42 @@ const ApprovalsScreen = ({ route, navigation }) => {
         animationType="fade"
         onRequestClose={handleCancelReject}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <Pressable style={styles.modalOverlay} onPress={handleCancelReject}>
+          <Pressable
+            style={styles.modalContent}
+            onPress={e => e.stopPropagation()}
+          >
             <Text style={styles.modalTitle}>Reject Request</Text>
             <Text style={styles.modalMessage}>
-              Please provides a reason for rejection:
+              Please provide a reason for rejection:
             </Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Reason..."
+            <Input
               value={rejectReason}
               onChangeText={setRejectReason}
+              placeholder="Reason..."
+              style={styles.input}
+              multiline
             />
             <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnCancel]}
-                onPress={handleCancelReject}
-              >
-                <Text style={styles.modalBtnTextCancel}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.rejectBtn]}
-                onPress={handleRejectConfirm}
-              >
-                <Text style={styles.modalBtnTextConfirm}>Confirm</Text>
-              </TouchableOpacity>
+              <View style={{ flex: 1 }}>
+                <Button
+                  title="Cancel"
+                  variant="neutral"
+                  onPress={handleCancelReject}
+                  style={{ width: '100%' }}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Button
+                  title="Confirm"
+                  variant="danger"
+                  onPress={handleRejectConfirm}
+                  style={{ width: '100%' }}
+                />
+              </View>
             </View>
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </ScreenWrapper>
   );
@@ -291,9 +308,6 @@ const styles = StyleSheet.create({
   list: { padding: SPACING.m, paddingBottom: 100 },
   card: {
     marginBottom: SPACING.m,
-    padding: 0,
-    paddingVertical: SPACING.m,
-    paddingHorizontal: SPACING.m,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -314,16 +328,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: 'white',
+    fontFamily: FONTS.bold,
   },
   dateBadge: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  date: { fontSize: 12, color: COLORS.textLight, fontWeight: '500' },
+  date: {
+    fontSize: 12,
+    color: COLORS.textLight,
+    fontWeight: '500',
+    fontFamily: FONTS.medium,
+  },
 
   divider: {
     height: 1,
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: COLORS.border,
     marginBottom: 12,
   },
 
@@ -336,7 +356,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 8,
-    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+    backgroundColor: COLORS.surfaceHighlight,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -352,12 +372,14 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     marginBottom: 2,
     letterSpacing: 0.5,
+    fontFamily: FONTS.semiBold,
   },
   value: {
     fontSize: 14,
     color: COLORS.text,
     fontWeight: '700',
     lineHeight: 20,
+    fontFamily: FONTS.bold,
   },
 
   actionRow: {
@@ -365,93 +387,66 @@ const styles = StyleSheet.create({
     marginTop: 8,
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
+    borderTopColor: COLORS.border,
     justifyContent: 'space-between',
-  },
-  rejectButton: {
-    flex: 1,
-    flexDirection: 'row',
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: COLORS.error || '#EF4444',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 8,
-    ...SHADOWS.soft,
-  },
-  rejectButtonText: {
-    color: 'white',
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  approveButton: {
-    flex: 1,
-    flexDirection: 'row',
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: COLORS.success || '#10B981',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 8,
-    ...SHADOWS.soft,
-  },
-  approveButtonText: {
-    color: 'white',
-    fontWeight: '700',
-    fontSize: 14,
+    gap: 12,
   },
 
   emptyText: {
     textAlign: 'center',
-    marginTop: 40,
     color: COLORS.textLight,
     fontSize: 16,
+    fontStyle: 'italic',
+    fontFamily: FONTS.regular,
   },
 
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.7)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: COLORS.surface,
+    borderRadius: 24,
+    padding: 24,
     width: '100%',
     maxWidth: 400,
+    ...SHADOWS.hard,
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '800',
     marginBottom: 10,
     color: COLORS.text,
+    fontFamily: FONTS.bold,
   },
-  modalMessage: { fontSize: 16, color: COLORS.textLight, marginBottom: 20 },
+  modalMessage: {
+    fontSize: 16,
+    color: COLORS.textLight,
+    fontFamily: FONTS.regular,
+  },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
+    height: 100,
     marginBottom: 20,
-    minHeight: 80,
-    textAlignVertical: 'top',
   },
-  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 10 },
-  modalBtn: { paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
-  modalBtnCancel: { backgroundColor: '#f0f0f0' },
-  modalBtnConfirm: { backgroundColor: COLORS.success || '#4CAF50' },
-  modalBtnTextCancel: { fontWeight: 'bold', color: COLORS.text },
-  modalBtnTextConfirm: { fontWeight: 'bold', color: 'white' },
-  rejectBtn: { backgroundColor: COLORS.error },
+  modalActions: { flexDirection: 'row', marginTop: 20, gap: 12 },
+
+  iconBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.m,
+    alignSelf: 'center',
+  },
   loaderContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: SPACING.m,
-    backgroundColor: COLORS.surface,
-    ...SHADOWS.soft,
   },
 });
 

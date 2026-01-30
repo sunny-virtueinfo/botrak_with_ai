@@ -31,6 +31,7 @@ const CustomModal = ({ visible, title, message, options = [], onClose }) => {
                     styles.button,
                     isCancel && styles.cancelButton,
                     isDestructive && styles.destructiveButton,
+                    options.length === 2 && { flex: 1 }, // Force equal width for 2 buttons
                     options.length > 2 && styles.fullWidthButton, // Stack if many options
                   ]}
                   onPress={() => {

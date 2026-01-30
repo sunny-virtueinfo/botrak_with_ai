@@ -13,7 +13,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import Feather from 'react-native-vector-icons/Feather';
 import { COLORS, SPACING, FONTS, SHADOWS } from '../../theme';
 import { useApiService } from '../../services/ApiService';
-import GlassCard from '../../components/premium/GlassCard';
+import Card from '../../components/common/Card';
 import ScreenWrapper from '../../components/common/ScreenWrapper';
 import Loader from '../../components/common/Loader';
 import { useCustomModal } from '../../context/ModalContext';
@@ -112,7 +112,7 @@ const AuditCategoriesScreen = ({ route, navigation }) => {
         style={styles.gridItem}
         activeOpacity={0.7}
       >
-        <GlassCard style={styles.card}>
+        <Card variant="elevated" style={styles.card}>
           <View style={styles.iconCircle}>
             <Feather name={iconName} size={24} color={COLORS.primary} />
           </View>
@@ -121,8 +121,8 @@ const AuditCategoriesScreen = ({ route, navigation }) => {
               {item.name}
             </Text>
           </View>
-          <Feather name="chevron-right" size={28} color={COLORS.textLight} />
-        </GlassCard>
+          <Feather name="chevron-right" size={24} color={COLORS.textLight} />
+        </Card>
       </TouchableOpacity>
     );
   };
@@ -238,7 +238,8 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
     fontWeight: '600',
-    fontStyle: FONTS.italic,
+    fontStyle: 'italic',
+    fontFamily: FONTS.medium,
   },
   locationTitle: {
     fontSize: 22,
@@ -251,15 +252,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: COLORS.primary,
     fontWeight: '500',
+    fontFamily: FONTS.medium,
   },
 
   list: {
     paddingHorizontal: SPACING.m,
     paddingBottom: 100,
     gap: 10, // Space for FAB
-  },
-  columnWrapper: {
-    justifyContent: 'space-between',
   },
   gridItem: {
     flex: 1,
@@ -269,12 +268,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    padding: SPACING.m,
   },
   iconCircle: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: COLORS.primary + '15', // 15% opacity tint
+    backgroundColor: COLORS.surfaceHighlight, // Muted background
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -282,7 +282,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     width: '100%',
-    padding: SPACING.m,
+    paddingLeft: SPACING.m,
   },
   cardTitle: {
     fontSize: 16,
@@ -306,7 +306,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.textLight,
     marginTop: SPACING.m,
-    fontStyle: FONTS.italic,
+    fontStyle: 'italic',
+    fontFamily: FONTS.regular,
   },
 
   // FAB Styles
@@ -316,7 +317,6 @@ const styles = StyleSheet.create({
     right: 25,
     width: 60,
     height: 60,
-    borderRadius: 30,
     borderRadius: 30,
     ...SHADOWS.medium,
     zIndex: 100,
@@ -357,16 +357,14 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 8,
     overflow: 'hidden',
-    borderRadius: 8,
-    overflow: 'hidden',
     ...SHADOWS.soft,
+    fontFamily: FONTS.medium,
   },
   miniFab: {
     width: 44,
     height: 44,
     borderRadius: 22,
     justifyContent: 'center',
-    alignItems: 'center',
     alignItems: 'center',
     ...SHADOWS.soft,
   },

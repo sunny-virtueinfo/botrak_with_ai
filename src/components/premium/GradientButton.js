@@ -1,7 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-import { COLORS, SHADOWS, SPACING } from '../../theme';
+import { COLORS, FONTS, SHADOWS, SPACING } from '../../theme';
 import Loader from '../common/Loader';
 
 const GradientButton = ({
@@ -42,21 +42,22 @@ const GradientButton = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    height: 50,
-    borderRadius: 12,
+    height: 54, // Taller button
+    borderRadius: 16, // More rounded
+    ...SHADOWS.medium,
   },
   gradient: {
     flex: 1,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
-    ...SHADOWS.medium,
+    borderRadius: 16,
   },
   text: {
     color: COLORS.surface,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '700', // Clearer bold
+    fontFamily: FONTS.bold,
     letterSpacing: 0.5,
   },
 });
